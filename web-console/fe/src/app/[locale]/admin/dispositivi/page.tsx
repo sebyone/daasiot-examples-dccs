@@ -100,6 +100,7 @@ export default function Dispositivi() {
   const [dinOptions, setDinOptions] = useState<number[]>([]);
   const [ws, setSocket] = useState<WebSocket | null>(null);
   const [alignment, setAlignment] = useState<string>('Sconosciuto');
+  const [linkStatus, setLinkStatus] = useState<boolean>(true);
   const { width } = useWindowSize();
   const wh = width <= 1920;
 
@@ -311,6 +312,7 @@ export default function Dispositivi() {
       try {
         const response = await ConfigService.addFunction(selectedDevice.id, functionToAdd.id);
         setSelectedFunctions((prev) => [...prev, response]);
+        setAlignment('Disallineato');
         message.success('Funzione aggiunta con successo');
       } catch (error) {
         message.error("Errore nell'aggiunta della funzione");
@@ -335,6 +337,7 @@ export default function Dispositivi() {
 
           await ConfigService.deleteFunction(selectedDevice.id, functionId);
           results.push({ success: true, functionId });
+          setAlignment('Disallineato');
         } catch (error: any) {
           if (error?.error_name === 'SequelizeTimeoutError' && error?.message?.includes('database is locked')) {
             try {
@@ -583,6 +586,7 @@ export default function Dispositivi() {
           onAddFunction={handleAddFunction}
           onDeleteFunctions={handleDeleteFunctions}
           onUpdateFunction={handleUpdateFunction}
+          onAlignmentChange={setAlignment}
         />
       ),
     },
@@ -796,6 +800,7 @@ export default function Dispositivi() {
                   showLinkStatus
                   showAlignmentStatus
                   alignment={alignment}
+                  linkStatus={linkStatus}
                 >
                   <Panel showSaveButtons={false} layoutStyle="devices">
                     <PanelView layoutStyle="devices">

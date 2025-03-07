@@ -27,6 +27,7 @@ import {
   SlidersOutlined,
 } from '@ant-design/icons';
 import { Button, Checkbox, Col, Descriptions, Input, List, message, Modal, Row, Select, Space, Table } from 'antd';
+import { on } from 'events';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import React, { useCallback, useState } from 'react';
@@ -61,6 +62,7 @@ interface ParametersTabProps {
       notifications?: { property_id: number; value: any }[];
     }
   ) => Promise<void>;
+  onAlignmentChange: (status: string) => void; // Callback per cambiare lo stato
 }
 
 export default function ParametersTab({
@@ -82,6 +84,7 @@ export default function ParametersTab({
   onAddFunction,
   onDeleteFunctions,
   onUpdateFunction,
+  onAlignmentChange,
 }: ParametersTabProps) {
   const t = useTranslations('ParametersTab');
 
@@ -97,6 +100,8 @@ export default function ParametersTab({
   const [tempNotifications, setTempNotifications] = useState<{ [key: number]: any }>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showTestControl] = useState(false);
+  const [isProgrammingLoading, setIsProgrammingLoading] = useState<boolean>(false);
+  const [isImportingLoading, setIsImportingLoading] = useState<boolean>(false);
 
   // Handlers UI locali
   const handleDeleteClick = useCallback(() => {
@@ -149,9 +154,10 @@ export default function ParametersTab({
     []
   );
 
+  // funzione per programmare la funzione selezionata
   const handleProgram = useCallback(async () => {
     if (!device?.id) return;
-    setIsLoading(true);
+    setIsProgrammingLoading(true);
     try {
       const functionToApply = selectedFunctions.find((f) => f.id === checkedFunctions[0]);
 
@@ -168,14 +174,34 @@ export default function ParametersTab({
       };
 
       await ConfigService.programFunction(device.id, functionData);
+      onAlignmentChange('Allineato');
       message.success('Funzione inviata con successo');
     } catch (error: any) {
       message.error(error.message || "Errore durante l'invio della funzione");
       console.error('Send function error:', error);
     } finally {
-      setIsLoading(false);
+      setIsProgrammingLoading(false);
     }
-  }, [device?.id, selectedFunctions, checkedFunctions]);
+  }, [device?.id, selectedFunctions, checkedFunctions, onAlignmentChange]);
+
+  // funzione per importare la programmazione
+  const handleImportProgram = useCallback(async () => {
+    if (!device?.id) return;
+    setIsImportingLoading(true);
+    try {
+      //await ConfigService.importProgram(device.id);
+      // simulazione importazione della programmazione
+      const mockData = [...selectedFunctions];
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      onAlignmentChange('Allineato');
+      message.success('Programmazione importata con successo');
+    } catch (error: any) {
+      message.error(error.message || "Errore durante l'importazione della programmazione");
+      console.error('Import program error:', error);
+    } finally {
+      setIsImportingLoading(false);
+    }
+  }, [device?.id, onAlignmentChange, selectedFunctions]);
 
   const handleModalOk = useCallback(async () => {
     if (!currentFunction) return;
@@ -246,6 +272,11 @@ export default function ParametersTab({
     if (!hasChanges) {
       setIsModalVisible(false);
       return;
+    }
+
+    if (hasChanges) {
+      // Imposta lo stato di allineamento su "Disallineato" quando ci sono modifiche
+      onAlignmentChange('Disallineato');
     }
 
     await onUpdateFunction(currentFunction.id, updates);
@@ -601,7 +632,12 @@ export default function ParametersTab({
         <Col xs={24} sm={24} md={12}>
           <Row gutter={[8, 8]} className={styles.rightButtonGroup}>
             <Col>
-              <Button type="primary" icon={<CloudDownloadOutlined style={{ fontSize: '1.2rem' }} />}>
+              <Button
+                type="primary"
+                icon={<CloudDownloadOutlined style={{ fontSize: '1.2rem' }} />}
+                onClick={handleImportProgram}
+                loading={isImportingLoading}
+              >
                 {t('recall')}
               </Button>
             </Col>

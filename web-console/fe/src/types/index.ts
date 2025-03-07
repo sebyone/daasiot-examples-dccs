@@ -99,6 +99,7 @@ export interface DataPanelProps {
   showLinkStatus?: boolean;
   showAlignmentStatus?: boolean;
   alignment?: string;
+  linkStatus?: boolean;
 }
 
 export interface PanelProps {
