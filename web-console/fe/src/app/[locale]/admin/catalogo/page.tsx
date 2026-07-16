@@ -92,7 +92,7 @@ export default function Catalogo() {
     if (groupId === null) {
       setSelectedGroup(null);
     } else {
-      setSelectedGroup({ id: groupId, title: groupTitle });
+      setSelectedGroup({ id: groupId, title: groupTitle ?? '' });
     }
     setSelectedModel(null);
     fetchDeviceModels(groupId, 1, modelsPagination.pageSize, searchTerm);

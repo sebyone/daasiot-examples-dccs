@@ -27,6 +27,7 @@ import {
   Function,
   LinkDataType,
   MapDataType,
+  ReceiverDataType,
   StatusDataType,
 } from '@/types';
 import axiosInstance from '@/utils/api';
@@ -36,7 +37,7 @@ const ConfigService = {
    * Recupera l'elenco di tutti i receivers
    * Promise<DinLocalDataType[]> - Array di oggetti DinLocalDataType
    */
-  getAll: async (): Promise<DinLocalDataType[]> => {
+  getAll: async (): Promise<ReceiverDataType[]> => {
     try {
       const response = await axiosInstance.get('/receivers');
       return response.data;

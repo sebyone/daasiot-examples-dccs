@@ -11,7 +11,7 @@
  * francescopantusa98@gmail.com - initial implementation
  *
  */
-import { ColumnType, LinkDataType } from '@/types';
+import { ColumnType, LinkTableDataType } from '@/types';
 import GenericTable from './generics/GenericTable';
 
 const defaultColumns: ColumnType[] = [
@@ -27,7 +27,7 @@ const defaultColumns: ColumnType[] = [
   },
 ];
 
-class LinkTable extends GenericTable<LinkDataType> {
+class LinkTable extends GenericTable<LinkTableDataType> {
   getDefaultColumns(): ColumnType[] {
     return defaultColumns;
   }

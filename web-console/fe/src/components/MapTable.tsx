@@ -11,7 +11,7 @@
  * francescopantusa98@gmail.com - initial implementation
  *
  */
-import { ColumnType, MapDataType } from '@/types';
+import { ColumnType, MapTableDataType } from '@/types';
 import GenericTable from './generics/GenericTable';
 
 const defaultColumns: ColumnType[] = [
@@ -27,7 +27,7 @@ const defaultColumns: ColumnType[] = [
   },
 ];
 
-class MapTable extends GenericTable<MapDataType> {
+class MapTable extends GenericTable<MapTableDataType> {
   getDefaultColumns(): ColumnType[] {
     return defaultColumns;
   }

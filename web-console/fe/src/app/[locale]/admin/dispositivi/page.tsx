@@ -14,7 +14,7 @@
 'use client';
 import { useCustomNotification } from '@/hooks/useNotificationHook';
 import { default as ConfigService, default as configService } from '@/services/configService';
-import { DataDevice, Event } from '@/types';
+import { DataDevice, DDOView } from '@/types';
 import {
   DeploymentUnitOutlined,
   EditFilled,
@@ -79,13 +79,13 @@ export default function Dispositivi() {
   const [showTestControl, setShowTestControl] = useState<boolean>(false);
   const [isDeviceSelected, setIsDeviceSelected] = useState(false);
   const [isModalInfoEventVisible, setIsModalInfoEventVisible] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
+  const [selectedRow, setSelectedRow] = useState<DDOView | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const locale = useLocale();
   const [activeTabKey, setActiveTabKey] = useState('1');
-  const [ddos, setDdos] = useState<Event[]>([]);
+  const [ddos, setDdos] = useState<DDOView[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const MapComponent = dynamic(() => import('@/components/Map'), {
@@ -98,7 +98,7 @@ export default function Dispositivi() {
     setPageSize(pageSize);
   };
 
-  const handleViewClick = (record) => {
+  const handleViewClick = (record: DDOView) => {
     setSelectedRow(record);
     setIsModalInfoEventVisible(true);
   };
@@ -127,7 +127,7 @@ export default function Dispositivi() {
     {
       title: '',
       key: 'action',
-      render: (text, record) => (
+      render: (_text: unknown, record: DDOView) => (
         <SearchOutlined style={{ cursor: 'pointer' }} onClick={() => handleViewClick(record)} />
       ),
     },
@@ -265,7 +265,9 @@ export default function Dispositivi() {
   };
 
   useEffect(() => {
-    const socket = new WebSocket(`${process.env.NEXT_PUBLIC_API_BASE_URL}`);
+    const socket = new WebSocket(
+      process.env.NEXT_PUBLIC_WS_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'ws://localhost:3000'
+    );
 
     socket.onmessage = (event) => {
       console.log('Ricevuto messaggio', event.data);
@@ -423,7 +425,7 @@ export default function Dispositivi() {
       ),
       children: (
         <div style={{ height: '55vh', marginTop: -40 }}>
-          <MapComponent device={selectedDevice} />
+          {selectedDevice ? <MapComponent device={selectedDevice} /> : null}
         </div>
       ),
     },

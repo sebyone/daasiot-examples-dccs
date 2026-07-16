@@ -16,7 +16,12 @@ import IPAddressIcon from '@/components/IPAddressIcon';
 import LTEIcon from '@/components/LTEIcon';
 import { useCustomNotification } from '@/hooks/useNotificationHook';
 import { default as ConfigService, default as configService } from '@/services/configService';
-import { ConfigFormData, LinkDataType, MapDataType, StatusDataType } from '@/types';
+import {
+  ConfigFormData,
+  LinkTableDataType,
+  MapTableDataType,
+  StatusDataType,
+} from '@/types';
 import { Form, Modal, Tabs, TabsProps } from 'antd';
 import { useLocale, useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
@@ -39,19 +44,19 @@ const EditDinLocal = () => {
   const [title, setTitle] = useState('');
   const [dinLocal, setDinLocal] = useState<string>();
   const { notify, contextHolder } = useCustomNotification();
-  const [linksData, setLinksData] = useState<LinkDataType[]>([]);
-  const [mapsData, setMapsData] = useState<MapDataType[]>([]);
+  const [linksData, setLinksData] = useState<LinkTableDataType[]>([]);
+  const [mapsData, setMapsData] = useState<MapTableDataType[]>([]);
   const [statusData, setStatusData] = useState<StatusDataType | null>(null);
   const [status, setStatus] = useState(false);
   const [value, setValue] = useState<number | number[]>(0);
   const [ws, setSocket] = useState<WebSocket | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [selectedMap, setSelectedMap] = useState<MapDataType | null>(null);
+  const [selectedMap, setSelectedMap] = useState<MapTableDataType | null>(null);
   const t = useTranslations('EditDinLocal');
   const tBack = useTranslations('handleGoBack');
   const locale = useLocale();
 
-  const handleOpenModal = (data: MapDataType) => {
+  const handleOpenModal = (data: MapTableDataType) => {
     setSelectedMap(data);
     setIsModalVisible(true);
   };
@@ -61,12 +66,12 @@ const EditDinLocal = () => {
     setSelectedMap(null);
   };
 
-  const handleEditLink = (data: LinkDataType) => {
-    router.push(`/${locale}/admin/configurazione/editLink/${data.id}`);
+  const handleEditLink = (data: LinkTableDataType) => {
+    router.push(`/${locale}/admin/configurazione/editLink/${data.source.id}`);
   };
 
-  const handleEditMap = (data: MapDataType) => {
-    router.push(`/${locale}/admin/configurazione/editMap/${data.id}`);
+  const handleEditMap = (data: MapTableDataType) => {
+    router.push(`/${locale}/admin/configurazione/editMap/${data.source.cdin.id}`);
   };
 
   const getIconForLinks = (tipologia: number): ReactNode => {
@@ -87,6 +92,7 @@ const EditDinLocal = () => {
             id: link.id,
             link: <>{icon}</>,
             url: link.url,
+            source: link,
           };
         });
         setLinksData(links);
@@ -102,7 +108,8 @@ const EditDinLocal = () => {
         const maps = data.map((map) => ({
           id: map.cdin.id,
           din: map.cdin.din,
-          tech: map.cdin,
+          tech: map.cdin.links.map((link) => getIconForLinks(link.link)),
+          source: map,
         }));
         setMapsData(maps);
       });
@@ -200,10 +207,10 @@ const EditDinLocal = () => {
     form.submit();
   };
 
-  const handleDeleteLink = async (link: LinkDataType) => {
-    if (!link?.id) return;
+  const handleDeleteLink = async (link: LinkTableDataType) => {
+    if (!link.source.id) return;
     try {
-      await ConfigService.deleteLink(link.id);
+      await ConfigService.deleteLink(link.source.id);
       fetchLinks();
       notify('success', t('success'), t('successDeleteLink'));
     } catch (error) {
@@ -212,10 +219,10 @@ const EditDinLocal = () => {
     }
   };
 
-  const handleDeleteMap = async (map: MapDataType) => {
-    if (!map?.id) return;
+  const handleDeleteMap = async (map: MapTableDataType) => {
+    if (!map.source.cdin.id) return;
     try {
-      await ConfigService.deleteMap(map.id);
+      await ConfigService.deleteMap(map.source.cdin.id);
       fetchMaps();
       notify('success', t('success'), t('successDeleteMap'));
     } catch (error) {
@@ -225,7 +232,9 @@ const EditDinLocal = () => {
   };
 
   useEffect(() => {
-    const socket = new WebSocket(`${process.env.NEXT_PUBLIC_API_BASE_URL}`);
+    const socket = new WebSocket(
+      process.env.NEXT_PUBLIC_WS_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'ws://localhost:3000'
+    );
 
     socket.onmessage = (event) => {
       console.log('Ricevuto messaggio', event.data);
@@ -265,7 +274,7 @@ const EditDinLocal = () => {
   const onSend = async () => {
     try {
       if (selectedMap) {
-        await configService.sendPayload(Number(selectedMap.din), status, value);
+        await configService.sendPayload(Number(selectedMap.source.cdin.din), status, value);
         notify('success', t('success'), t('successSend'));
       }
     } catch (error) {

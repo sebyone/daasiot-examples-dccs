@@ -12,7 +12,7 @@
  *
  */
 import ConfigService from '@/services/configService';
-import { DinDataType, DinFormData, MapFormProps } from '@/types';
+import { DinDataType, DinFormValues, MapFormProps } from '@/types';
 import { Checkbox, Col, Divider, Form, Input, Row, Select } from 'antd';
 import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
@@ -24,7 +24,7 @@ const MapForm = ({ form, onFinish, setIsDataSaved }: MapFormProps) => {
   const [isCustomFeaturesChecked, setIsCustomFeaturesChecked] = useState(false);
   const [sidOptions, setSidOptions] = useState<{ value: string }[]>([]);
 
-  const handleFinish = (values: DinFormData) => {
+  const handleFinish = (values: DinFormValues) => {
     onFinish(values);
     setIsDataSaved(true);
   };

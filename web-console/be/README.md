@@ -1,67 +1,40 @@
-# daas-nodejs
+# Backend DaaS-IoT Web Console
 
-## Setup
+Backend Express con API HTTP, WebSocket, SQLite/Sequelize e adapter DaaS.
 
-### Installazione su macchina locale linux (x64)
+## Avvio
 
-Installare le dipendenze
-
-```npm install```
-
-Applicare le migrazioni al database
-
-```
-npx sequelize-cli db:migrate
-npx sequelize-cli db:seed:all
+```bash
+npm install
+npm run db:migrate
+npm run db:seed
+npm run dev
 ```
 
-Avviare il server:
+Il server usa la porta `3000`, modificabile tramite `PORT`.
 
-```npm run start:server```
+## Verifica
 
-Avviare il nodo sender:
+```bash
+npm run check
+npm test
+```
 
-```npm run start:sender```
+Endpoint operativi:
 
-Se si desidera avviare utilizzare una porta diversa dalla 3000 (e.g. 3001):
+- `GET /health/live`: verifica che il processo HTTP sia attivo;
+- `GET /health/ready`: verifica database e runtime DaaS;
+- `GET /api/version`: riporta versione e compatibilità dell'adapter DaaS;
+- `GET /api-docs`: documentazione OpenAPI.
 
-```PORT=3001 npm run start:server```
+## Configurazione DaaS
 
-### Sviluppo con VSCode e DevContainer
+- `DAAS_LOCAL_RECEIVER_ID`: receiver locale da usare, default `1`.
 
-Per sviluppare all'interno di un container, in modo da avere un ambiente di sviluppo isolato e riproducibile, è possibile utilizzare il DevContainer di VSCode.
+Questo branch fissa `daas-sdk` alla versione `0.17.9` e Node.js alla versione
+`20.20.2`. Il backend utilizza la SDK legacy con il comportamento già previsto
+dal progetto originale, senza introdurre controlli bloccanti sui suoi difetti
+interni.
 
-Richiede che l'estensione [`Dev Containers`](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) sia installata sul proprio VS Code.
-
-Digitare `Ctrl + Shift + P` e cercare e poi eseguire il comando `Dev Containers: Rebuild and Reopen in Container`.
-
-Una volta terminata la operazione di build, si aprirà una nuova finesta di VS Code dove sarà possibile avviare server e client nel dev container docker appena creato.
-
-Per ulteriori info consultare la [documentazione ufficiale](https://code.visualstudio.com/docs/devcontainers/containers).
-
----
-
-![sebyone-logo](https://sebyone.it/res/lg_daasiot-410-72dpi.png)
-
-# Welcome to the DaaS-IoT project
-
-more information about the Project are available on:
-
-* [www.daasiot.com](https://daasiot.sebyone.it) official project's site
-* [www.daasiot.net](https://daasiot.net) cloud _services_ for IoT platforms (PaaS)
-
-## Repositories
-
-**Note**: “daasiot-nodejs” is also avalable at [NPM Repo](https://www.npmjs.com/package/daas-sdk)
-
-## Documentation
-
-### API
-
-Una volta avviato il server, visitare la pagina `http://localhost:3000/api-docs` per visualizzare la documentazione interattiva.
-
-## Running & Debugging
-
-## Communicating with the Team
-
-If you would like to ask a question please reach out to us via email: [developers@sebyone.it](developers@sebyone.it)
+La futura libreria `0.22.0` potrà essere integrata sostituendo
+l'implementazione sotto `src/daas`, senza modificare bootstrap e API.

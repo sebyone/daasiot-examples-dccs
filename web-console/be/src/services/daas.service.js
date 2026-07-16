@@ -17,9 +17,7 @@ const DinLocal = db.DinLocal;
 const DinLink = db.DinLink;
 const DinHasDin = db.DinHasDin;
 
-const localDinId = 1;
-
-async function loadConfig(node) {
+async function loadConfig(node, localDinId = Number.parseInt(process.env.DAAS_LOCAL_RECEIVER_ID || '1', 10)) {
 
     const dinLocal = await DinLocal.findByPk(localDinId, { raw: true, include: ['din'] });
     const dinLocalLinks = await DinLink.findAll({
@@ -77,7 +75,7 @@ async function loadConfig(node) {
         ]
     });
 
-    dinsToMap.forEach(async (d) => {
+    dinsToMap.forEach((d) => {
         const din = parseInt(d.cdin.din);
         const links = d.cdin.links;
 
@@ -89,12 +87,10 @@ async function loadConfig(node) {
             map(din, driver, url);
         }
         else {
-            links.forEach(async (link) => {
-                driver = parseInt(link.link);
-                url = link.url;
-
+            links.forEach((link) => {
+                const driver = parseInt(link.link);
+                const url = link.url;
                 map(din, driver, url);
-
             });
         }
 

@@ -20,22 +20,29 @@ function sendError(res, error, status) {
         error_name: error.name,
         message: error.message,
     })
-    console.error(`[daas] ${error.name} code ${res.statusCode}: ${error.message}\n${error.stack}`);
+    if (res.statusCode >= 500 && res.statusCode !== 503) {
+        console.error(`[daas] ${error.name} code ${res.statusCode}: ${error.message}\n${error.stack}`);
+    } else {
+        console.warn(`[daas] ${error.name} code ${res.statusCode}: ${error.message}`);
+    }
 }
 
 function getPaginationParams(req) {
     let limit = DEFAULT_PAGE_LIMIT;
     let offset = 0;
     if (req.query.limit != undefined) {
-        limit = parseInt(req.query.limit);
-        limit = Math.min(limit, MAX_PAGE_LIMIT);
-        limit = Math.max(limit, 0);
+        const parsedLimit = Number.parseInt(req.query.limit, 10);
+        if (Number.isFinite(parsedLimit)) {
+            limit = Math.min(Math.max(parsedLimit, 0), MAX_PAGE_LIMIT);
+        }
         // 0 <= limit <= MAX_PAGE_LIMIT
     }
 
     if (req.query.offset != undefined) {
-        offset = parseInt(req.query.offset);
-        offset = Math.max(offset, 0);
+        const parsedOffset = Number.parseInt(req.query.offset, 10);
+        if (Number.isFinite(parsedOffset)) {
+            offset = Math.max(parsedOffset, 0);
+        }
         // offset >= 0
     }
 

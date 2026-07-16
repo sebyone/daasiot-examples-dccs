@@ -96,7 +96,7 @@ router.post('/device_models', async function (req, res) {
 
         if (deviceModel.resources) {
             for (const resource of deviceModel.resources) {
-                await createResource(newDeviceModel.id, resource, t);
+                await createResource(newDeviceModel.id, resource, t, res);
             }
         }
 
@@ -248,7 +248,7 @@ router.post('/device_models/:deviceModelId/resources', async function (req, res)
             throw new Error(`DeviceModel con id=${deviceModelId} non trovato.`);
         }
 
-        const newResource = await createResource(deviceModelId, resource, t);
+        const newResource = await createResource(deviceModelId, resource, t, res);
         await t.commit();
         res.send(newResource);
     }
@@ -287,7 +287,7 @@ router.delete('/device_models/:deviceModelId/resources/:resourceId', async funct
 
 
 
-async function createResource(deviceModelId, resource, t) {
+async function createResource(deviceModelId, resource, t, res) {
     resource.device_model_id = deviceModelId;
 
     for (const field of ['name', 'link', 'resource_type']) {

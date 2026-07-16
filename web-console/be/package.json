@@ -1,33 +1,48 @@
 {
     "name": "daas-iot-sdk-node",
     "version": "1.0.0",
-    "description": "",
-    "main": "server.js",
+    "description": "DaaS-IoT HTTP and WebSocket backend",
+    "main": "src/server.js",
+    "engines": {
+        "node": ">=20.19.0 <21",
+        "npm": ">=10.8.0 <12"
+    },
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "node server.js",
-        "start:server": "NODE_ENV=production node src/server.js",
-        "start:sender": "NODE_ENV=production node src/sender.js",
-        "start:dev:server": "NODE_ENV=development nodemon --force-node-api-uncaught-exceptions-policy=true src/server.js",
-        "start:dev:client": "NODE_ENV=development nodemon src/sender.js"
+        "start": "cross-env NODE_ENV=production node src/server.js",
+        "dev": "cross-env NODE_ENV=development nodemon src/server.js",
+        "start:sender": "cross-env NODE_ENV=production node src/sender.js",
+        "dev:sender": "cross-env NODE_ENV=development nodemon src/sender.js",
+        "build": "npm run check",
+        "check": "eslint src test && node --check src/server.js",
+        "test": "node --test",
+        "db:migrate": "cross-env NODE_ENV=development sequelize-cli db:migrate",
+        "db:seed": "cross-env NODE_ENV=development sequelize-cli db:seed:all",
+        "db:reset": "cross-env NODE_ENV=development sequelize-cli db:migrate:undo:all"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "cors": "^2.8.5",
-        "daas-sdk": "^0.17.8",
+        "cors": "^2.8.6",
+        "daas-sdk": "0.17.9",
         "ejs": "^3.1.10",
-        "express": "^4.19.2",
-        "morgan": "^1.10.0",
-        "sequelize": "^6.37.3",
-        "sqlite3": "^5.1.7",
+        "express": "^5.2.1",
+        "morgan": "^1.11.0",
+        "sequelize": "^6.37.8",
+        "sqlite3": "^6.0.1",
         "swagger-ui-express": "^5.0.1",
-        "ws": "^8.17.0",
+        "ws": "^8.21.1",
         "yamljs": "^0.3.0"
     },
     "devDependencies": {
-        "nodemon": "^3.1.2",
+        "@eslint/js": "^10.0.0",
+        "cross-env": "^10.1.0",
+        "eslint": "^10.7.0",
+        "globals": "^17.0.0",
+        "nodemon": "^3.1.14",
         "sequelize-cli": "^6.6.2"
+    },
+    "overrides": {
+        "brace-expansion": "^1.1.13"
     }
 }

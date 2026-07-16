@@ -14,7 +14,7 @@
 'use client';
 import { useCustomNotification } from '@/hooks/useNotificationHook';
 import configService from '@/services/configService';
-import { DinFormData } from '@/types';
+import { DinFormData, DinFormValues } from '@/types';
 import { Form, Modal } from 'antd';
 import { useLocale, useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
@@ -40,7 +40,7 @@ const NewMap = () => {
     updateState({});
   }, [locale]);
 
-  const onFinish = async (values: DinFormData) => {
+  const onFinish = async (values: DinFormValues) => {
     console.log(values);
     try {
       const formattedValues: DinFormData = {
@@ -49,9 +49,10 @@ const NewMap = () => {
           din: values.din,
           p_res: `${values.profileR}${values.profileE}${values.profileS}` || '',
           skey: values.skey || '',
-          links: values.links || [],
-          receiver: values.receiver || null,
         },
+        ...(values.links && values.address
+          ? { link: { id: values.links, link: values.links, url: values.address } }
+          : {}),
       };
       await configService.createMap(formattedValues);
       notify('success', t('success'), t('successSave'));

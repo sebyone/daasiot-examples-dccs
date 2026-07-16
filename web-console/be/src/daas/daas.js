@@ -12,51 +12,75 @@
  * alessio.farfaglia@gmail.com - maintenance and updates
  */
 
-const { DaasIoT } = require("daas-sdk");
-const db = require("../db/models");
+const sdkPackage = require("daas-sdk/package.json");
 const hver = "nodeJS";
 
-let nodeInstance = new DaasIoT(hver);
+let nodeInstance = null;
+
+function loadNode() {
+    if (!nodeInstance) {
+        const { DaasIoT } = require('daas-sdk');
+        nodeInstance = new DaasIoT(hver);
+    }
+
+    return nodeInstance;
+}
 
 function configure(sid, din, drivers = [], devices = []) {
-    nodeInstance.doInit(sid, din);
+    const node = loadNode();
+    node.doInit(sid, din);
 
     drivers.forEach(driver => {
-        nodeInstance.enableDriver(driver.type, driver.url);
+        node.enableDriver(driver.type, driver.url);
         console.log(`Driver ${driver.type} on ${driver.url} enabled.`);
     });
 
     devices.forEach(device => {
-        nodeInstance.map(device.din, device.driverType, device.url);
+        node.map(device.din, device.driverType, device.url);
         console.log(`Device ${device.din} on ${device.driverType} : ${device.url} mapped.`);
     });
 
-    return nodeInstance;
+    return node;
 }
 
 function getNode() {
-    return nodeInstance;
+    return loadNode();
+}
+
+function getStatus() {
+    return loadNode().getStatus();
+}
+
+function getVersion() {
+    return {
+        daasSdkPackage: sdkPackage.version,
+        node: process.version,
+        nodeAddonApi: process.versions.napi,
+        nativeLoaded: nodeInstance !== null,
+    };
 }
 
 function start() {
-    return nodeInstance.doPerform();
+    return loadNode().doPerform();
 }
 
 function stop() {
+    if (!nodeInstance) return true;
     return nodeInstance.doEnd();
 }
 
 function restart() {
-    nodeInstance.restart();
+    return loadNode().restart();
 }
 
 async function send(din, typeset, data) {
-    const located = nodeInstance.locate(din);
+    const node = loadNode();
+    const located = node.locate(din);
 
     if (!located) throw new Error(`Node ${din} could not be located!`)
 
     const timestampSeconds = Math.floor(new Date().getTime() / 1000);
-    nodeInstance.push(din, typeset, timestampSeconds, data);
+    return node.push(din, typeset, timestampSeconds, data);
 }
 
 module.exports = {
@@ -64,6 +88,8 @@ module.exports = {
     start,
     stop,
     getNode,
+    getStatus,
+    getVersion,
     restart,
     send,
 }

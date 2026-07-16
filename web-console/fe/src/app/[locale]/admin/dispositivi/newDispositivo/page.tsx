@@ -13,7 +13,7 @@
  */
 'use client';
 import { useCustomNotification } from '@/hooks/useNotificationHook';
-import { Device } from '@/types';
+import { DataDevice } from '@/types';
 import { Form, Modal } from 'antd';
 import { useLocale, useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
@@ -39,7 +39,7 @@ const NewDispositivo = () => {
     updateState({});
   }, [locale]);
 
-  const onFinish = async (values: Device) => {
+  const onFinish = async (_values: DataDevice) => {
     /*try {
       await configService.createLink(values);
       notify('success', t('success'), t('successSave'));
@@ -76,7 +76,7 @@ const NewDispositivo = () => {
       <DataPanel title={'New Dispositivo'} isEditing={isDataSaved} showSemaphore={true}>
         <Panel handleGoBack={handleGoBack} handleSave={handleSave} showSaveButtons={true} layoutStyle="singleTable">
           <PanelView layoutStyle="singleTable">
-            <NodoForm form={form} onFinish={onFinish} setIsDataSaved={setIsDataSaved} readOnly={false} />
+            <NodoForm form={form} onFinish={onFinish} setIsDataSaved={setIsDataSaved} />
           </PanelView>
         </Panel>
       </DataPanel>

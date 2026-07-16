@@ -1,0 +1,13 @@
+node_modules/
+.npm-cache/
+.next/
+coverage/
+*.log
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+
+web-console/be/database.sqlite
+web-console/be/database.sqlite-*

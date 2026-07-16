@@ -16,7 +16,13 @@ import { FormInstance } from 'antd';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import React from 'react';
 
-export type TableDataType = LinkDataType | MapDataType | DinLocalDataType | StatusDataType;
+export type TableDataType =
+  | LinkDataType
+  | LinkTableDataType
+  | MapDataType
+  | MapTableDataType
+  | DinLocalDataType
+  | StatusDataType;
 
 export interface DinLocalDataType {
   id?: number;
@@ -26,6 +32,16 @@ export interface DinLocalDataType {
   acpt_all: string;
   links: string;
   status: string;
+}
+
+export interface ReceiverDataType {
+  id: number;
+  title: string;
+  din_id: number;
+  acpt_all: boolean;
+  enable: boolean;
+  din: DinDataType;
+  links: LinkDataType[];
 }
 export interface ActionsButtonProps {
   data: any;
@@ -169,7 +185,7 @@ export interface LinkFormProps {
 
 export interface MapFormProps {
   form: FormInstance;
-  onFinish: (values: DinFormData) => void;
+  onFinish: (values: DinFormValues) => void;
   setIsDataSaved: (status: boolean) => void;
 }
 
@@ -208,14 +224,26 @@ export interface DinDataType {
   skey: string;
 }
 export interface DinFormData {
-  cdin: {
-    sid: string;
-    din: string;
-    p_res: string;
-    skey: string;
-    links: Link[];
-    receiver: null;
-  };
+  din: DinDataType;
+  link?: Omit<Link, 'din_id'>;
+}
+
+export interface LinkTableDataType extends Omit<LinkDataType, 'link'> {
+  link: React.ReactNode;
+  source: LinkDataType;
+}
+
+export interface DinFormValues {
+  id?: number;
+  sid: string;
+  din: string;
+  profileR?: string;
+  profileE?: string;
+  profileS?: string;
+  skey?: string;
+  links?: number;
+  address?: string;
+  receiver?: number | null;
 }
 
 export interface Link {
@@ -226,10 +254,19 @@ export interface Link {
 }
 
 export interface MapDataType {
+  pdin_id?: number;
+  cdin_id?: number;
+  cdin: DinDataType & {
+    links: Link[];
+    receiver: ReceiverDataType | null;
+  };
+}
+
+export interface MapTableDataType {
   id?: number;
   din: string;
-  links: Link[];
-  tech: string;
+  tech: React.ReactNode;
+  source: MapDataType;
 }
 
 export interface CardDispositivoProps {
@@ -243,7 +280,7 @@ export interface CardDispositivoProps {
 export interface ModalDispositivoProps {
   isVisible: boolean;
   onClose: () => void;
-  data: MapDataType;
+  data: MapTableDataType;
   status: boolean;
   setStatus: (enabled: boolean) => void;
   onChangeComplete: (value: number | number[]) => void;
@@ -344,6 +381,14 @@ export interface DDO {
   typeset_id: number;
   payload: string;
   payload_size: number;
+}
+
+export interface DDOView {
+  id?: number;
+  timestamp: string;
+  typeset: number;
+  payload: string;
+  payloadSize: number;
 }
 
 export interface Pagination {

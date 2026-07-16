@@ -14,8 +14,6 @@
  */
 
 const express = require('express');
-const router = express.Router();
-
 // add all other api files here
 // api.js                 deviceModelGroups.js  devices.js      receiversAndRemotes.js
 // configAndLifecycle.js  deviceModels.js       programming.js  utilities.js
@@ -23,27 +21,31 @@ const router = express.Router();
 const deviceModelGroups = require('./deviceModelGroups');
 const devices = require('./devices');
 const receiversAndRemotes = require('./receiversAndRemotes');
-const configAndLifecycle = require('./configAndLifecycle');
+const { createConfigAndLifecycleRouter } = require('./configAndLifecycle');
 const deviceModels = require('./deviceModels');
 const programming = require('./programming');
 
-module.exports = router;
+function createApiRouter(dependencies) {
+    const router = express.Router();
 
-router.use(configAndLifecycle.router);
+    router.use(createConfigAndLifecycleRouter(dependencies));
+    router.use(receiversAndRemotes.router);
+    router.use(devices.router);
+    router.use(deviceModels.router);
+    router.use(deviceModelGroups.router);
+    router.use(programming.router);
 
-router.use(receiversAndRemotes.router);
-
-router.use(devices.router);
-router.use(deviceModels.router);
-router.use(deviceModelGroups.router);
-
-router.use(programming.router);
-
-router.all('*', function (req, res) {
-    res.status(404);
-    res.send({
-        error_name: "NotFound",
-        message: "Endpoint non trovato."
+    router.all('/*path', function (req, res) {
+        res.status(404).send({
+            error_name: 'NotFound',
+            message: 'Endpoint API non trovato.',
+        });
     });
-});
+
+    return router;
+}
+
+module.exports = {
+    createApiRouter,
+};
 

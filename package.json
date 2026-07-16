@@ -1,0 +1,17 @@
+{
+  "name": "daasiot-examples-dccs",
+  "version": "2.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.0 <21",
+    "npm": ">=10.8.0 <12"
+  },
+  "scripts": {
+    "install:all": "npm ci --prefix web-console/be && npm ci --prefix web-console/fe",
+    "dev:backend": "npm run dev --prefix web-console/be",
+    "dev:frontend": "npm run dev --prefix web-console/fe",
+    "build": "npm run build --prefix web-console/be && npm run build --prefix web-console/fe",
+    "check": "npm run check --prefix web-console/be && npm run check --prefix web-console/fe",
+    "test": "npm test --prefix web-console/be && npm test --prefix web-console/fe"
+  }
+}

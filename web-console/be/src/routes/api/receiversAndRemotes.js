@@ -3,7 +3,6 @@ const router = express.Router();
 const { Op } = require("sequelize");
 const { DinLocal, Din, DinLink, DinHasDin } = require('../../db/models');
 const db = require("../../db/models");
-const daasNode = require('../../daas/daas');
 const { sendError } = require('./utilities');
 
 module.exports = {
@@ -592,7 +591,8 @@ router.post('/receivers/:receiverId/remotes/', async function (req, res) {
 
     if (remoteDin && parseInt(remoteDin.din)) {
         try {
-            daasNode.getNode().map(parseInt(remoteDin.din));
+            const daasApi = req.app.get('daasApi');
+            daasApi.getNode().map(parseInt(remoteDin.din));
             console.log(`[API] Mapped remote din ${remoteDin.din}`);
         } catch (err) {
             console.error(`[API] Errore durante il mapping del nodo remoto ${remoteDin.din}:`, err);

@@ -124,6 +124,7 @@ const Configurazione = () => {
           showAcceptAllCheckBox={true}
           showPowerActions={true}
           showSaveButton={false}
+          showStatus={false}
         />
       ),
     },

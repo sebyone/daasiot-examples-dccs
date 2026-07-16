@@ -16,7 +16,6 @@ import type { ThemeConfig } from 'antd';
 import { ConfigProvider } from 'antd';
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
-import { Inter } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import './globals.css';
 
@@ -28,8 +27,6 @@ const config: ThemeConfig = {
   // },
 };
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const metadata: Metadata = {
   title: 'DaaS-NodeJS - Sebyone',
   description: 'DaaS-NodeJS app by Sebyone',
@@ -37,11 +34,12 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
   const theme = {
     components: {
       Form: { verticalLabelPadding: 0 },
@@ -56,8 +54,8 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="it">
-      <body className={inter.className} suppressHydrationWarning={true}>
+    <html lang={locale}>
+      <body suppressHydrationWarning={true}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AntdRegistry>
             <ConfigProvider theme={theme}>{children}</ConfigProvider>
