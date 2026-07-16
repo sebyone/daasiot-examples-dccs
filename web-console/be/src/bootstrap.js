@@ -14,7 +14,7 @@ function normalizePort(value) {
     return Number.isNaN(port) ? value : port >= 0 ? port : false;
 }
 
-function listen(server, port) {
+function listen(server, port, host) {
     return new Promise((resolve, reject) => {
         const onError = (error) => {
             server.off('listening', onListening);
@@ -27,7 +27,7 @@ function listen(server, port) {
 
         server.once('error', onError);
         server.once('listening', onListening);
-        server.listen(port);
+        server.listen(port, host);
     });
 }
 
@@ -47,6 +47,7 @@ function closeHttpServer(server) {
 
 async function startServer({
     port = normalizePort(process.env.PORT || '3000'),
+    host = process.env.HOST,
     dependencies = {},
 } = {}) {
     const resolvedDatabase = dependencies.database || database;
@@ -75,7 +76,7 @@ async function startServer({
         broadcast: webSocket.broadcast,
     });
 
-    const address = await listen(server, port);
+    const address = await listen(server, port, host);
     runtimeState.markStarted();
 
     try {

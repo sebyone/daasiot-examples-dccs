@@ -73,6 +73,7 @@ test('backend starts without schema sync, reports readiness and shuts down clean
     const runtimeState = createRuntimeState();
     const runtime = await startServer({
         port: 0,
+        host: '127.0.0.1',
         dependencies: {
             ...dependencies,
             runtimeState,
@@ -81,6 +82,7 @@ test('backend starts without schema sync, reports readiness and shuts down clean
     t.after(() => runtime.stop());
 
     const port = runtime.address.port;
+    assert.equal(runtime.address.address, '127.0.0.1');
     const liveResponse = await fetch(`http://127.0.0.1:${port}/health/live`);
     const readyResponse = await fetch(`http://127.0.0.1:${port}/health/ready`);
     const apiResponse = await fetch(`http://127.0.0.1:${port}/api`);
