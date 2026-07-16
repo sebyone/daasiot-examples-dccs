@@ -112,6 +112,7 @@ function restart() {
 }
 
 async function send(din, typeset, data) {
+    din = Number.parseInt(din, 10);
     const node = loadNode();
     const located = node.locate(din);
 

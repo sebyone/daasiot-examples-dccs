@@ -17,7 +17,7 @@ import { Checkbox, Col, Divider, Form, Input, Row, Select } from 'antd';
 import { useTranslations } from 'next-intl';
 import React, { useEffect, useState } from 'react';
 
-const MapForm = ({ form, onFinish, setIsDataSaved }: MapFormProps) => {
+const MapForm = ({ form, onFinish, setIsDataSaved, disableSid }: MapFormProps) => {
   const t = useTranslations('MapForm');
   const tipologiaOptions = [{ value: '0' }, { value: '1' }];
   const [isCallableChecked, setIsCallableChecked] = useState(false);
@@ -53,7 +53,7 @@ const MapForm = ({ form, onFinish, setIsDataSaved }: MapFormProps) => {
   }, []);
 
   return (
-    <div style={{ width: '40%' }}>
+    <div>
       <Row gutter={48}>
         <Col span={24}>
           <Form
@@ -62,6 +62,7 @@ const MapForm = ({ form, onFinish, setIsDataSaved }: MapFormProps) => {
             autoComplete="off"
             onFinish={handleFinish}
             onValuesChange={handleValuesChange}
+            style={{ marginTop: 10 }}
           >
             <Row gutter={24}>
               <Col span={12}>
@@ -71,7 +72,7 @@ const MapForm = ({ form, onFinish, setIsDataSaved }: MapFormProps) => {
                   name="sid"
                   rules={[{ required: true, message: t('enterSID') }]}
                 >
-                  <Select options={sidOptions} />
+                  <Select options={sidOptions} disabled={disableSid} />
                 </Form.Item>
 
                 <Form.Item label="DIN" name="din" rules={[{ required: true, message: t('enterDIN') }]}>

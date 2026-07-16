@@ -14,6 +14,8 @@
 import { FormMenuProps } from '@/types';
 import { Button } from 'antd';
 
+import { CheckOutlined, LeftOutlined } from '@ant-design/icons';
+
 import { useTranslations } from 'next-intl';
 import './components.css';
 
@@ -30,7 +32,6 @@ export default function FormMenu({
   const style = {
     display: 'flex',
     gap: '7px',
-    marginTop: '-7px',
   };
 
   const t = useTranslations('FormMenu');
@@ -77,10 +78,15 @@ export default function FormMenu({
       )}
       {showSaveButton && (
         <>
-          <Button type="primary" onClick={handleGoBack}>
-            {t('back')}
-          </Button>
-          <Button type="primary" onClick={handleSave}>
+          <Button
+            type="primary"
+            style={{
+              borderRadius: '100%',
+            }}
+            icon={<LeftOutlined />}
+            onClick={handleGoBack}
+          ></Button>
+          <Button type="primary" style={{ borderRadius: '12px' }} icon={<CheckOutlined />} onClick={handleSave}>
             {t('save')}
           </Button>
         </>

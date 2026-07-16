@@ -40,9 +40,18 @@ localNode.onDDOReceived((din) => {
         let readableTimestamp = new Date(timestamp * 1000).toISOString().replace(/T/, ' ').replace(/\..+/, '')
 
         try {
-            let decodedData = decode(data);
             console.log(`⬇⬇ Pulling data from DIN: ${origin} | sent ${readableTimestamp} | typeset: ${typeset} | data:`);
-            console.log(decodedData);
+
+            let decodedData = decode(data);
+            decodedData = Buffer.from(decodedData, 'base64').toString('ascii');
+
+            try {
+                let parsedData = JSON.parse(decodedData);
+                console.log(JSON.stringify(parsedData, null, 2));
+            }
+            catch (error) {
+                console.log(decodedData);
+            }
 
         } catch (error) {
             console.error(error);

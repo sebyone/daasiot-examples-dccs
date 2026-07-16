@@ -12,26 +12,35 @@
  *
  */
 'use client';
+import { useWindowSize } from '@/hooks/useWindowSize';
 import {
+  BoxPlotOutlined,
   DeploymentUnitOutlined,
   DesktopOutlined,
   SettingOutlined,
   ShoppingOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { Menu, MenuProps } from 'antd';
+import { Menu, MenuProps, Tooltip } from 'antd';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
-type MenuItem = Required<MenuProps>['items'][number] & { roles?: string[] };
+type MenuItem = {
+  key: string;
+  icon: React.ReactNode;
+  label: string;
+  href: string;
+  roles?: string[];
+};
 
 const getPathMap = (locale: string) => ({
   [`/${locale}/admin/configurazione`]: '/admin/configurazione',
   [`/${locale}/admin/dispositivi`]: '/admin/dispositivi',
   [`/${locale}/admin/updater-Esp32`]: '/admin/updater-Esp32',
   [`/${locale}/admin/catalogo`]: '/admin/catalogo',
+  [`/${locale}/admin/impostazioni`]: '/admin/impostazioni',
   [`/${locale}/admin`]: '/admin',
 });
 
@@ -45,38 +54,66 @@ const getSelectedKey = (pathname: string, locale: string): string => {
   return '';
 };
 
-export default function NavMenu({ role }: { role: string }) {
+const menuItemStyle = {
+  height: '4vh',
+  padding: '0px 0px 0px 0px',
+};
+
+export default function NavMenu({ role }: { role?: string }) {
   const pathname = usePathname();
   const t = useTranslations('NavMenu');
   const locale = useLocale();
+  const { width } = useWindowSize();
+
+  const wh = width < 768;
+
+  const iconStyle = {
+    fontSize: '25px',
+    lineHeight: '64px',
+    display: 'flex',
+    justifyContent: 'center',
+
+    width: '100%',
+  };
 
   const [selectedKey, setSelectedKey] = useState<string>(getSelectedKey(pathname, locale));
 
   const allMenuItems: MenuItem[] = [
     {
       key: '/admin',
-      icon: <DesktopOutlined />,
-      label: <Link href={`/${locale}/admin`}>{t('dashboard')}</Link>,
+      icon: <DesktopOutlined style={iconStyle} />,
+      label: t('dashboard'),
+      href: `/${locale}/admin`,
     },
     {
       key: '/admin/configurazione',
-      icon: <SettingOutlined />,
-      label: <Link href={`/${locale}/admin/configurazione`}>{t('configuration')}</Link>,
+      icon: <DeploymentUnitOutlined style={iconStyle} />,
+      label: t('system'),
+      href: `/${locale}/admin/configurazione`,
     },
     {
       key: '/admin/dispositivi',
-      icon: <DeploymentUnitOutlined />,
-      label: <Link href={`/${locale}/admin/dispositivi`}>{t('devices')}</Link>,
+      icon: <BoxPlotOutlined style={iconStyle} />,
+      label: t('devices'),
+      href: `/${locale}/admin/dispositivi`,
     },
     {
       key: '/admin/catalogo',
-      icon: <ShoppingOutlined />,
-      label: <Link href={`/${locale}/admin/catalogo`}>{t('catalog')}</Link>,
+      icon: <ShoppingOutlined style={iconStyle} />,
+      label: t('catalog'),
+      href: `/${locale}/admin/catalogo`,
     },
     {
       key: '/admin/updater-Esp32',
-      icon: <SyncOutlined />,
-      label: <Link href={`/${locale}/admin/updater-Esp32`}>Updater Esp32</Link>,
+      icon: <SyncOutlined style={iconStyle} />,
+      label: t('otaService'),
+      href: `/${locale}/admin/updater-Esp32`,
+    },
+    {
+      key: '/admin/impostazioni',
+      icon: <SettingOutlined style={iconStyle} />,
+      label: t('settings'),
+      href: `/${locale}/admin/impostazioni`,
     },
   ];
 
@@ -98,7 +135,17 @@ export default function NavMenu({ role }: { role: string }) {
       mode="inline"
       selectedKeys={[selectedKey]}
       style={{ height: '100%', borderRight: 0 }}
-      items={menuItems}
-    />
+      inlineIndent={0}
+    >
+      {menuItems.map((item) => (
+        <Menu.Item key={item.key} icon={item.icon} style={menuItemStyle}>
+          <Tooltip placement="right" title={item.label} mouseEnterDelay={0.1}>
+            <Link href={item.href} style={{ color: 'inherit' }}>
+              <span className="sr-only">{item.label}</span>
+            </Link>
+          </Tooltip>
+        </Menu.Item>
+      ))}
+    </Menu>
   );
 }

@@ -1,0 +1,74 @@
+.menuItem {
+  margin-top: -1px;
+}
+
+.menuItemContent {
+  display: flex;
+  align-items: center;
+}
+
+.imageContainer {
+  margin-right: 30px;
+}
+
+.groupImage {
+  object-fit: cover;
+}
+
+.groupTitle {
+  margin-top: -13px;
+}
+
+.paginationWrapper {
+  margin-top: 16px;
+  margin-left: -50px;
+}
+
+/*@media screen and (max-width: 1295px) and (min-width: 992px) {
+  .groupTitle {
+    margin-top: -13px;
+    font-size: 12px;
+  }
+
+  .imageContainer {
+    margin-right: 10px;
+  }
+
+  .pagination {
+    width: 50px;
+  }
+}
+
+@media screen and (max-width: 1199px) and (min-width: 992px) {
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .pagination :global(.ant-pagination) {
+    flex-wrap: nowrap;
+  }
+
+  .pagination :global(.ant-pagination-options) {
+    flex-basis: auto;
+    margin-top: 0;
+    margin-left: 8px;
+  }
+}
+
+@media screen and (max-width: 1884px) and (min-width: 1295px) {
+  .pagination {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .pagination :global(.ant-pagination) {
+    flex-wrap: nowrap;
+  }
+
+  .pagination :global(.ant-pagination-options) {
+    flex-basis: auto;
+    margin-top: 0;
+    margin-left: 8px;
+  }
+}*/

@@ -21,17 +21,13 @@
 .container {
   display: flex;
   height: 89vh;
+  transform: scale(0.95);
 }
 
-@media (max-width: 600px) {
-  .container {
-    display: none;
-  }
+.menuItem {
+  font-weight: normal;
+}
 
-  .mobileMessage {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
+.menuItem:global(.ant-menu-item-selected) {
+  font-weight: bold !important;
 }

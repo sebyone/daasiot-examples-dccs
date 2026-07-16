@@ -8,6 +8,11 @@ coverage/
 .env
 .env.local
 .env.*.local
+web-console/fe/.env.production
 
 web-console/be/database.sqlite
 web-console/be/database.sqlite-*
+
+.runtime/
+.service-home/
+.npm-cache/

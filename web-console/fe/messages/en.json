@@ -8,9 +8,11 @@
   },
   "NavMenu": {
     "dashboard": "Dashboard",
-    "configuration": "Configuration",
+    "system": "System",
     "devices": "Devices",
-    "catalog": "Catalog"
+    "catalog": "Catalog",
+    "otaService": "OTA Service",
+    "settings": "Settings"
   },
   "FormMenu": {
     "add": "Add",
@@ -20,8 +22,12 @@
     "save": "Save"
   },
   "Dashboard": {
+    "version": "Version",
     "managedNodes": "Managed Nodes",
-    "messagesExchanged": "Messages Exchanged"
+    "messagesExchanged": "Exchanged Messages",
+    "operationalStatus": "Operational status",
+    "activeLinks": "Active links:",
+    "statistics": "Statistics"
   },
   "Dispositivi": {
     "selectDevice": "Select a device in the list to view its details",
@@ -125,17 +131,17 @@
     "errorGetReceivers": "Error loading receivers"
   },
   "Catalogo": {
-    "selectGroupModel": "Select a model group to view models or search the bar",
+    "selectGroupModel": "Select a group to view models or search the bar",
     "mobileMessage": "This content is not available on mobile devices.",
     "order": "Order",
     "loadFW": "Load FW",
     "deselectGroup": "Deselect group",
-    "devicesGroup": "Models group",
+    "devicesGroup": "Group",
     "modelsGroup": "Models",
     "searchDevice": "Search model ...",
     "noGroupsAvailable": "No groups available",
     "noModelsAvailable": "No models available",
-    "serialNumber": "Serial number:",
+    "description": "Description:",
     "ModelGroupID": "Model group ID:",
     "documents": "Documents:"
   },
@@ -147,6 +153,67 @@
     "lastUpdateDate": "Last update date:",
     "importantNotes": "Important notes",
     "note": "Make sure your device is connected correctly during the update. Do not interrupt the update process to avoid damage to your device."
+  },
+  "DaaSUpdater": {
+    "title1": "Generic OTA service for devices activation and updating",
+    "title2": "Device Firmware Updater",
+    "titleESP32": "Device Firmware Updater (ESP32)",
+    "start": "Start",
+    "port": "Port",
+    "device": "Device",
+    "availableFirmware": "Select firmware",
+    "noFirmwareAvailable": "No firmware available",
+    "startUpdate": "Start update",
+    "deviceNotFound": "Device not recognized. Redirect to catalogue...",
+    "errorLoadingFirmware": "Error loading firmware",
+    "flashStatus": {
+      "downloading": "Firmware download in progress...",
+      "validating": "Firmware validation...",
+      "flashing": "Firmware update in progress, don't disconnect the device!"
+    },
+    "alertUpdateComplete": {
+      "message": "Programming completed successfully!",
+      "description": "Restart your device and follow the setup procedures for your model."
+    },
+    "alertDeviceNotFound": {
+      "message": "Device not recognized!",
+      "description": "You will be redirected to the catalog..."
+    },
+    "alertUpdateFailed": {
+      "message": "Programming failed!",
+      "description": "There was a problem updating, please try again following the procedure. If the problem persists, contact technical service."
+    }
+  },
+  "FirmwareUpdaterExplanation": {
+    "alert": {
+      "warning": "Warning",
+      "description": "OTA service may not be available on some models. Consult the catalog to check the functionality of your device."
+    },
+    "typography": {
+      "title": "How to update/activate a device"
+    },
+    "steps": {
+      "step1": {
+        "title": "Connect the device you want to activate/update",
+        "description": "Connect your device to your computer via USB."
+      },
+      "step2": {
+        "title": "Select compatible firmware",
+        "description": "Choose the appropriate firmware for your device from the available list."
+      },
+      "step3": {
+        "title": "Start programming",
+        "description": "Click on 'Start Update' to begin the firmware update process."
+      },
+      "step4": {
+        "title": "Wait for completion without disconnecting your device",
+        "description": "The firmware is being loaded onto the device. A progress bar shows the update status."
+      },
+      "step5": {
+        "title": "Unplug and restart your device",
+        "description": "Once the update is complete, you will receive a confirmation message. Please restart your device to apply the changes."
+      }
+    }
   },
   "ParametersTab": {
     "function": "Function",

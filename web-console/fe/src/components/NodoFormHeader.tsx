@@ -11,51 +11,92 @@
  * francescopantusa98@gmail.com - initial implementation
  *
  */
-import { Col, Form, FormInstance, Input, Row, Typography } from 'antd';
+import { Card, Col, Form, FormInstance, Input, Row, Statistic } from 'antd';
 import { useTranslations } from 'next-intl';
 import React from 'react';
-
-const { Text } = Typography;
-
+import './NodoFormHeader.css';
 const NodoFormHeader = ({ form }: { form: FormInstance }) => {
-  const marginBottom = { marginBottom: -22 };
   const t = useTranslations('NodoForm');
   const style = {
-    minWidth: '550px',
     width: '100%',
     maxWidth: '680px',
-    marginTop: -50,
-    marginLeft: 25,
-    marginBottom: -20,
+    marginTop: '-55px',
+    marginLeft: '25px',
+    padding: '0 15px',
   };
+  const renderField = (value: string | number | boolean | undefined) => (value !== undefined ? String(value) : '-');
 
-  const renderField = (value: string | number | boolean | undefined) => (
-    <Text strong style={{ fontSize: '0.8rem' }}>
-      {value !== undefined ? String(value) : '-'}
-    </Text>
-  );
-
+  const formatMatricola = (value: string | number | undefined) => {
+    if (value === undefined) return '-';
+    return String(value).replace(/,/g, '');
+  };
   return (
-    <>
-      <Form form={form} layout="vertical" style={style}>
-        <Form.Item name="id" noStyle>
-          <Input type="hidden" />
-        </Form.Item>
-        <Row gutter={24} style={marginBottom}>
-          <Col span={12}>
-            <Form.Item label={t('model')} name="modello">
-              {renderField(form.getFieldValue('modello'))}
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item name="matricola" label={t('serialNumber')}>
-              {renderField(form.getFieldValue('matricola'))}
-            </Form.Item>
-          </Col>
-        </Row>
-      </Form>
-    </>
+    <Form form={form} layout="vertical" style={style}>
+      <Form.Item name="id" noStyle>
+        <Input type="hidden" />
+      </Form.Item>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={24} md={12}>
+          <Card
+            size="small"
+            bordered={false}
+            bodyStyle={{
+              padding: '4px',
+              minHeight: '20px',
+            }}
+            style={{ boxShadow: '5px 8px 24px 5px rgba(208, 216, 243, 0.6)', cursor: 'default' }}
+          >
+            <Statistic
+              title={
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    marginBottom: '2px',
+                  }}
+                >
+                  Modello
+                </span>
+              }
+              value={renderField(form.getFieldValue('modello'))}
+              valueStyle={{
+                color: 'black',
+                fontSize: '0.85rem',
+              }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={24} md={12}>
+          <Card
+            size="small"
+            bordered={false}
+            bodyStyle={{
+              padding: '4px',
+              minHeight: '20px',
+            }}
+            style={{ boxShadow: '5px 8px 24px 5px rgba(208, 216, 243, 0.6)', cursor: 'default' }}
+          >
+            <Statistic
+              title={
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    marginBottom: '2px',
+                  }}
+                >
+                  Matricola
+                </span>
+              }
+              value={form.getFieldValue('serial')}
+              formatter={formatMatricola}
+              valueStyle={{
+                color: 'black',
+                fontSize: '0.85rem',
+              }}
+            />
+          </Card>
+        </Col>
+      </Row>
+    </Form>
   );
 };
-
 export default NodoFormHeader;

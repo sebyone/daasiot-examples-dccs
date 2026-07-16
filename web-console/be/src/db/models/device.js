@@ -22,11 +22,18 @@ module.exports = (sequelize, DataTypes) => {
     },
     din_id: {
       type: DataTypes.INTEGER,
+      unique: true,
       allowNull: false,
     },
     name: {
       type: DataTypes.STRING,
-      maxLength: 45,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+      },
+    },
+    serial: {
+      type: DataTypes.STRING,
       allowNull: false,
       validate: {
         notEmpty: true,

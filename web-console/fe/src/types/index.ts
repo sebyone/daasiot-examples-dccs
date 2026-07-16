@@ -13,6 +13,8 @@
  */
 import { DeviceComponentsRegistry } from '@/utils/deviceComponentsRegistry';
 import { FormInstance } from 'antd';
+import CryptoJS from 'crypto-js';
+import { Transport } from 'esptool-js';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import React from 'react';
 
@@ -23,6 +25,14 @@ export type TableDataType =
   | MapTableDataType
   | DinLocalDataType
   | StatusDataType;
+
+export interface Version {
+  daasLibrary: string;
+  compiler: string;
+  cppStandardLibrary: string;
+  node: string;
+  nodeAddonApi: string;
+}
 
 export interface DinLocalDataType {
   id?: number;
@@ -104,6 +114,8 @@ export interface DataPanelProps {
   showSemaphore?: boolean;
   showLinkStatus?: boolean;
   showAlignmentStatus?: boolean;
+  alignment?: string;
+  linkStatus?: boolean;
 }
 
 export interface PanelProps {
@@ -140,6 +152,7 @@ export interface DinLocalFormProps {
   showEnabledCheckBox: boolean;
   showAcceptAllCheckBox: boolean;
   showPowerActions: boolean;
+  showPowerActionsProcessor: boolean;
   showSaveButton: boolean;
   showStatus: boolean;
   statusData?: StatusDataType | null;
@@ -173,6 +186,14 @@ export interface ConfigData {
     p_res: string;
     skey: string;
   };
+  links?: [
+    {
+      id: number;
+      link: number;
+      din_id: number;
+      url: string;
+    },
+  ];
 }
 
 export interface LinkFormProps {
@@ -187,6 +208,7 @@ export interface MapFormProps {
   form: FormInstance;
   onFinish: (values: DinFormValues) => void;
   setIsDataSaved: (status: boolean) => void;
+  disableSid: boolean;
 }
 
 export interface LinkDataType {
@@ -224,7 +246,10 @@ export interface DinDataType {
   skey: string;
 }
 export interface DinFormData {
-  din: DinDataType;
+  din: DinDataType & {
+    links?: number | number[];
+    receiver?: number | null;
+  };
   link?: Omit<Link, 'din_id'>;
 }
 
@@ -288,6 +313,16 @@ export interface ModalDispositivoProps {
   onSend: () => void;
 }
 
+export interface ModalMapProps {
+  isVisible: boolean;
+  onClose: () => void;
+  sid: string;
+  din?: string;
+  onMapCreated?: (din: string) => void;
+  selectedMapId?: number | null;
+  mode?: 'create' | 'edit';
+}
+
 export interface FormDataDevice {
   name: string;
   din: {
@@ -303,16 +338,15 @@ export interface DataDevice {
   device_model_id: number;
   din_id: number;
   name: string;
+  serial: string;
   latitude: number;
   longitude: number;
   device_model: {
     id: number;
     device_group_id: number;
     description: string;
-    serial: string;
+    name: string;
     link_image: string;
-    link_datasheet: string;
-    link_userguide: string;
   };
   din: {
     id?: number;
@@ -323,6 +357,23 @@ export interface DataDevice {
   };
 }
 
+export interface CreateDevice {
+  modello?: number;
+  receiver?: number;
+  serial: string;
+  din?: number;
+  denominazione?: string;
+  device_model_id?: number;
+  din_id?: number;
+  name?: string;
+  latitude?: string;
+  longitude?: string;
+  latitudine?: string;
+  longitudine?: string;
+  enable?: boolean;
+  id?: number;
+}
+
 export interface Device {
   data: DataDevice[];
   pagination: Pagination;
@@ -330,8 +381,16 @@ export interface Device {
 
 export interface NodoFormProps {
   form: FormInstance;
-  onFinish: (values: DataDevice) => void;
+  onFinish: (values: CreateDevice) => void;
   setIsDataSaved: (status: boolean) => void;
+  deviceModels: Dev[];
+  receiversData: ConfigData[];
+  selectedReceiverSid: string;
+  onReceiverChange: (receiverId: number) => void;
+  onOpenModal: () => void;
+  dins?: DinDataType[];
+  onDinChange?: (value: number) => void;
+  mode?: 'create' | 'edit';
 }
 
 export interface BaseCardDispositivoProps {
@@ -432,6 +491,7 @@ export interface Dev {
   id: number;
   device_group_id: number;
   description: string;
+  name: string;
   serial: string;
   device_group?: DeviceGroup;
   resources?: Resource[];
@@ -481,3 +541,142 @@ export interface DeviceFunctionParameter {
   value: any;
   parameter_template: FunctionParameter;
 }
+
+/* CATALOGO */
+
+export interface DeviceGroupListProps {
+  /** Lista dei gruppi di dispositivi */
+  groups: DeviceGroup | null;
+  /** Gruppo attualmente selezionato */
+  selectedGroup: { id: number; title: string | null } | null;
+  /** Configurazione della paginazione */
+  pagination: { current: number; pageSize: number; total: number };
+  /** Flag per la visualizzazione mobile */
+  isMobile: boolean;
+  /** Flag per la visualizzazione laptop */
+  isLaptop: boolean;
+  /** Callback per la selezione di un gruppo */
+  onGroupSelect: (groupId: number | null, groupTitle: string | null) => void;
+  /** Callback per il cambio pagina */
+  onPaginationChange: (page: number, pageSize?: number) => void;
+  /** Testi tradotti */
+  translations: {
+    devicesGroup: string;
+    deselectGroup: string;
+    noGroupsAvailable: string;
+  };
+}
+
+export interface ModelListProps {
+  /** Lista dei modelli di dispositivi */
+  deviceModels: { data: Dev[] } | null;
+  /** Flag per lo stato di caricamento */
+  isLoading: boolean;
+  /** Modello attualmente selezionato */
+  selectedModel: Dev | null;
+  /** Flag per indicare se la ricerca è attiva */
+  isSearchActive: boolean;
+  /** Configurazione della paginazione */
+  pagination: {
+    current: number;
+    pageSize: number;
+    total: number;
+  };
+  /** Flag per la visualizzazione mobile */
+  isMobile: boolean;
+  /** Callback per la selezione di un modello */
+  onModelSelect: (model: Dev) => void;
+  /** Callback per il cambio pagina */
+  onPaginationChange: (page: number, pageSize?: number) => void;
+  /** Testi tradotti */
+  translations: {
+    modelsGroup: string;
+    noModelsAvailable: string;
+    selectGroupModel: string;
+  };
+  /** Funzione per ottenere l'immagine di copertina del modello */
+  getCoverModelImage: (model: Dev) => string | undefined;
+}
+
+export interface ModelDetailsProps {
+  /** Modello da visualizzare */
+  model: Dev;
+  /** Flag per la visualizzazione mobile */
+  isMobile: boolean;
+  /** Testi tradotti */
+  translations: {
+    order: string;
+    description: string;
+    documents: string;
+    loadFW: string;
+  };
+  /** Callback per l'apertura della pagina relativa al caricamento firmware */
+  onLoadFW: () => void;
+  /** Funzione per ottenere l'immagine di copertina dalla chiamata API*/
+  getCoverModelImage: (model: Dev) => string | undefined;
+  /** Funzione per ottenere i documenti del modello dalla chiamata API*/
+  getDatasheetModelDocuments: (model: Dev) => Array<{ name: string; link: string }>;
+  /** Funzione per ottenere il link del firmware dalla chiamata API*/
+  getFirmware: (model: Dev) => string | undefined;
+}
+
+/** Interfaccia per lo stato della paginazione */
+export interface UsePaginationState {
+  current: number;
+  pageSize: number;
+  total: number;
+}
+
+/** Interfaccia per il risultato dell'hook useDeviceGroups */
+export interface UseDeviceGroupsResult {
+  groups: DeviceGroup | null;
+  groupsPagination: UsePaginationState;
+  handleGroupsPaginationChange: (page: number, pageSize?: number) => void;
+}
+
+/** Interfaccia per il risultato dell'hook useDeviceModels */
+export interface UseDeviceModelsResult {
+  deviceModels: DeviceModel | null;
+  isLoading: boolean;
+  modelsPagination: UsePaginationState;
+  searchTerm: string;
+  isSearchActive: boolean;
+  handleSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleModelsPaginationChange: (page: number, pageSize?: number) => void;
+  fetchDeviceModels: (groupId: number | null, page: number, pageSize: number, search?: string) => Promise<void>;
+}
+
+/** Interfaccia per info del gruppo selezionato */
+export interface SelectedGroup {
+  id: number;
+  title: string | null;
+}
+
+export interface LoaderOptions {
+  transport: Transport;
+  baudrate: number;
+  debugLogging?: boolean;
+}
+
+export interface TarFile {
+  name: string;
+  data: string;
+  size: number;
+  offset: number;
+}
+
+export interface FlashOptions {
+  fileArray: {
+    data: Uint8Array;
+    address: number;
+  }[];
+  flashSize: string;
+  flashMode: string;
+  flashFreq: string;
+  eraseAll: boolean;
+  compress: boolean;
+  reportProgress: (fileIndex: number, written: number, total: number) => void;
+  calculateMD5Hash: (image: Uint8Array) => string;
+}
+
+export type FlashStatus = '' | 'downloading' | 'extracting' | 'connecting' | 'flashing' | 'validating';

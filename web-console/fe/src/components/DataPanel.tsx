@@ -12,6 +12,7 @@
  *
  */
 import { DataPanelProps } from '@/types';
+import { CheckCircleFilled, CloseCircleFilled, QuestionCircleFilled, WarningOutlined } from '@ant-design/icons';
 import { Card } from 'antd';
 import FormSemaphore from './FormSemaphore';
 
@@ -22,11 +23,32 @@ const DataPanel = ({
   showSemaphore,
   showLinkStatus,
   showAlignmentStatus,
+  alignment,
+  linkStatus,
 }: DataPanelProps) => {
-  const style_div = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0' };
+  const style_div = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0',
+  };
+
   const style_status = {
     display: 'flex',
     gap: '20px',
+  };
+
+  const style_link_status = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+  };
+
+  const style_span_status = {
+    fontWeight: 'bold',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
   };
 
   return (
@@ -37,12 +59,32 @@ const DataPanel = ({
           <div style={style_status}>
             {showLinkStatus && (
               <span>
-                Link: <b>online</b>
+                Link: <b>{linkStatus ? 'Online' : 'Offline'}</b>
+                {linkStatus ? (
+                  <CheckCircleFilled style={{ color: '#52c41a', marginLeft: '5px' }} />
+                ) : (
+                  <CloseCircleFilled style={{ color: '#ff4d4f', marginLeft: '5px' }} />
+                )}
               </span>
             )}
             {showAlignmentStatus && (
-              <span>
-                Allineato: <b>Unknown</b>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                Allineamento:{' '}
+                <span style={style_span_status}>
+                  {alignment === 'Disallineato' ? (
+                    <>
+                      {alignment} <WarningOutlined style={{ color: '#faad14' }} />
+                    </>
+                  ) : alignment === 'Allineato' ? (
+                    <>
+                      {alignment} <CheckCircleFilled style={{ color: '#52c41a' }} />
+                    </>
+                  ) : (
+                    <>
+                      {alignment} <QuestionCircleFilled style={{ color: '#8c8c8c' }} />
+                    </>
+                  )}
+                </span>
               </span>
             )}
             {showSemaphore && <FormSemaphore isDataSaved={isEditing} />}
@@ -51,7 +93,7 @@ const DataPanel = ({
       }
       bordered={false}
       size="small"
-      style={{ width: '100%', marginTop: 55 }}
+      style={{ width: '100%', marginTop: 55, marginLeft: 10 }}
     >
       {children}
     </Card>

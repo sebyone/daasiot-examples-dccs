@@ -31,7 +31,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       validate: {
-        isIn: [[1, 2, 3, 4]],
+        isIn: [[1, 2, 3, 4, 5]],
       },
     },
     device_model_id: {

@@ -5,18 +5,29 @@ const { DeviceModel, DeviceModelGroup, Device, DeviceModelResource } = require('
 const { getPaginationParams, getQuery, sendError, toPaginationData, addQuery } = require('./utilities');
 const db = require('../../db/models');
 const { createDeviceModelFunction } = require('./programming');
+const { DEFAULT_DEVICE_MODEL_GROUP_ID } = require('./deviceModelGroups');
 
+
+
+const PLACEHOLDER_DEVICE_MODEL_ID = 1;
 
 module.exports = {
-    router
+    router,
+    PLACEHOLDER_DEVICE_MODEL_ID
 };
 
 router.get('/device_models', async function (req, res) {
     try {
         const { limit, offset } = getPaginationParams(req);
         const q = getQuery(req);
-        const where = q ? { description: { [Op.like]: `%${q}%` } } : {};
-        const rowsAndCount = await DeviceModel.findAndCountAll({ where, limit, offset, include: ['device_group'] });
+        // the query is contained in the description or name
+        const where = q ? {
+            [Op.or]: [
+                { description: { [Op.like]: `%${q}%` } },
+                { name: { [Op.like]: `%${q}%` } }
+            ]
+        } : {};
+        const rowsAndCount = await DeviceModel.findAndCountAll({ where, limit, offset, include: ['device_group', 'resources'], subQuery: true });
 
         res.send(addQuery(toPaginationData(rowsAndCount, limit, offset), q));
     }
@@ -42,6 +53,31 @@ router.get('/device_models/:deviceModelId', async function (req, res) {
     }
 });
 
+router.get('/device_models/find/:deviceName', async function (req, res) {
+    try {
+        const deviceName = req.params.deviceName;
+        const deviceModels = await DeviceModel.findAll({ include: ['device_group', 'resources'] });
+
+        if (deviceModels === null) {
+            res.status(404);
+            throw new Error(`DeviceModel non trovato.`);
+        }
+
+        const similarModels = deviceModels
+        .filter(model => deviceName.includes(model.name)) 
+        .sort((a, b) => b.name.length - a.name.length);   
+
+        if (similarModels.length === 0) {
+            res.status(404);
+            throw new Error(`Nessun DeviceModel simile al nome del dispositivo: ${deviceName}`);
+        }
+        res.send(similarModels[0]);
+    }
+    catch (err) {
+        sendError(res, err);
+    }
+});
+
 router.post('/device_models', async function (req, res) {
     const t = await db.sequelize.transaction();
     try {
@@ -52,7 +88,7 @@ router.post('/device_models', async function (req, res) {
             throw new Error("Il body della richiesta non può essere vuoto.");
         }
 
-        for (const field of ['description', 'serial']) {
+        for (const field of ['description', 'name']) {
             if (!deviceModel[field]) {
                 res.status(400);
                 throw new Error(`Il campo ${field} è obbligatorio.`);
@@ -60,15 +96,13 @@ router.post('/device_models', async function (req, res) {
         }
 
         let deviceGroup = null;
+        // se il device_group_id è specificato, lo uso per cercare il device_group
         if (deviceModel.device_group_id != undefined) {
             deviceGroup = await DeviceModelGroup.findByPk(parseInt(deviceModel.device_group_id), { transaction: t });
         }
-        else {
-            if (!deviceModel.device_group) {
-                res.status(400);
-                throw new Error("Il device model deve avere un device_group, specificato come nuovo oggetto o come id.");
-            }
+        else if (deviceModel.device_group) {
 
+            // se il device_group.id è specificato, lo uso per cercare il device_group
             if (deviceModel.device_group.id) {
                 deviceGroup = await DeviceModelGroup.findByPk(parseInt(deviceModel.device_group.id), { transaction: t });
             }
@@ -77,6 +111,7 @@ router.post('/device_models', async function (req, res) {
                     res.status(400);
                     throw new Error("Il campo title è obbligatorio, non può essere vuoto e deve essere diverso da gli altri title già presenti.");
                 }
+                // cerco se esiste già un device_group con lo stesso title, se non esiste lo creo
                 deviceGroup = await DeviceModelGroup.findOne({ where: { title: deviceModel.device_group.title }, transaction: t });
 
                 if (deviceGroup === null) {
@@ -86,11 +121,11 @@ router.post('/device_models', async function (req, res) {
         }
 
         if (deviceGroup === null) {
-            res.status(404);
-            throw new Error(`DeviceModelGroup con id=${deviceModel.device_group_id} non trovato.`);
+            deviceModel.device_group_id = DEFAULT_DEVICE_MODEL_GROUP_ID;
         }
-
-        deviceModel.device_group_id = deviceGroup.id;
+        else {
+            deviceModel.device_group_id = deviceGroup.id
+        }
 
         const newDeviceModel = await DeviceModel.create(deviceModel, { transaction: t });
 
@@ -122,6 +157,11 @@ router.put('/device_models/:deviceModelId', async function (req, res) {
     try {
         const id = parseInt(req.params.deviceModelId);
         const deviceModel = req.body;
+
+        if (id === PLACEHOLDER_DEVICE_MODEL_ID) {
+            res.status(400);
+            throw new Error(`Il device_model con id=${PLACEHOLDER_DEVICE_MODEL_ID} è un placeholder e non può essere modificato.`);
+        }
 
         const oldDeviceModel = await DeviceModel.findByPk(id);
         if (oldDeviceModel === null) {
@@ -166,6 +206,12 @@ router.put('/device_models/:deviceModelId', async function (req, res) {
 router.delete('/device_models/:deviceModelId', async function (req, res) {
     try {
         const id = parseInt(req.params.deviceModelId);
+
+        if (id === PLACEHOLDER_DEVICE_MODEL_ID) {
+            res.status(400);
+            throw new Error(`Il device_model con id=${PLACEHOLDER_DEVICE_MODEL_ID} è un placeholder e non può essere eliminato.`);
+        }
+
         const deletedRows = await DeviceModel.destroy({ where: { id } });
 
         if (deletedRows === 0) {
@@ -239,6 +285,12 @@ router.post('/device_models/:deviceModelId/resources', async function (req, res)
     const t = await DeviceModel.sequelize.transaction();
     try {
         const deviceModelId = parseInt(req.params.deviceModelId);
+
+        if (deviceModelId === PLACEHOLDER_DEVICE_MODEL_ID) {
+            res.status(400);
+            throw new Error(`Il device_model con id=${PLACEHOLDER_DEVICE_MODEL_ID} è un placeholder e non può avere risorse.`);
+        }
+
         const resource = req.body;
         resource.device_model_id = deviceModelId;
 
@@ -263,6 +315,11 @@ router.delete('/device_models/:deviceModelId/resources/:resourceId', async funct
     try {
         const deviceModelId = parseInt(req.params.deviceModelId);
         const resourceId = parseInt(req.params.resourceId);
+
+        if (deviceModelId === PLACEHOLDER_DEVICE_MODEL_ID) {
+            res.status(400);
+            throw new Error(`Il device_model con id=${PLACEHOLDER_DEVICE_MODEL_ID} è un placeholder e non può avere risorse.`);
+        }
 
         const resource = await DeviceModelResource.findByPk(resourceId, { transaction: t });
         if (resource === null) {

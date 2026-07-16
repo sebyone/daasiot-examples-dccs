@@ -1,0 +1,76 @@
+.container {
+  height: 90%;
+}
+
+.loadingContainer {
+  text-align: center;
+  padding: 20px;
+}
+
+.listItem {
+  cursor: pointer;
+}
+
+.modelCard {
+  width: 105%;
+}
+
+.selectedCard {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.modelContent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modelImage {
+  width: 40%;
+  height: 40%;
+}
+
+.selectedText {
+  font-weight: bold;
+}
+
+.emptyIcon {
+  font-size: 60px;
+  color: #1890ff;
+}
+
+.paginationWrapper {
+  margin-top: 16px;
+  margin-left: -40px;
+}
+
+@media screen and (max-width: 1295px) and (min-width: 992px) {
+  .modelImage {
+    width: 40%;
+    height: 40%;
+  }
+
+  .modelContent {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 7px;
+  }
+
+  .modelCard {
+    width: 150%;
+  }
+}
+
+@media screen and (min-width: 2560px) {
+  .container {
+    height: 100%;
+  }
+}
+
+@media screen and (min-width: 768px) and (max-width: 991px) {
+  .container {
+    height: 100%;
+  }
+}

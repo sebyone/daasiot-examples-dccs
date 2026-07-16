@@ -20,10 +20,9 @@ module.exports = (sequelize, DataTypes) => {
 			type: DataTypes.STRING,
 			allowNull: false,
 		},
-		serial: {
-			type: DataTypes.STRING(20),
+		name: {
+			type: DataTypes.STRING,
 			allowNull: false,
-			maxLength: 20,
 		},
 	}, {
 		sequelize,

@@ -27,13 +27,13 @@
 .flex-container.singleTable {
   width: 100%;
   margin-top: 50px;
-  max-height: 500px;
+  max-height: auto;
 }
 
 .flex-container.devices {
   width: 100%;
   margin-top: 50px;
-  max-height: 500px;
+  max-height: auto;
 }
 
 .panel-content-list.default {
@@ -44,32 +44,10 @@
   transform: scale(0.9);
 }
 
-.mobile-message {
-  display: none;
-  font-size: 1.2em;
-  text-align: center;
-  padding: 20px;
+.descriptions .ant-descriptions-item-label {
+  background-color: #fafafa;
 }
 
-@media (max-width: 600px) {
-  .panel-content-view {
-    display: none;
-  }
-
-  .panel-content-list {
-    display: none;
-  }
-
-  .mobile-message {
-    display: block;
-  }
-}
-
-.title {
-  font-size: 14px;
-  font-weight: bold;
-}
-
-label {
-  font-size: 5px;
+.descriptions .ant-descriptions-item-content {
+  padding: 12px 24px;
 }

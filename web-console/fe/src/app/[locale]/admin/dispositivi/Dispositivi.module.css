@@ -1,13 +1,5 @@
-.mobileMessage {
-  display: none;
-  padding: 24px;
-  font-size: 1.2em;
-  text-align: center;
-}
-
 .container {
   display: flex;
-  height: 89vh;
 }
 
 .ant-pagination-prev .ant-pagination-item-link,
@@ -23,15 +15,10 @@
   background-color: #d1d1d1;
 }
 
-@media (max-width: 600px) {
-  .container {
-    display: none;
-  }
-
-  .mobileMessage {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
+:global([class*='ant-layout']) .siderCustom :global(.ant-layout-sider-zero-width-trigger-left) {
+  position: absolute !important;
+  inset-inline-end: -20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  top: 40px !important;
 }

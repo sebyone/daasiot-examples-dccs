@@ -14,11 +14,14 @@
 'use client';
 import IPAddressIcon from '@/components/IPAddressIcon';
 import LTEIcon from '@/components/LTEIcon';
+import ModalMap from '@/components/ModalMap';
 import { useCustomNotification } from '@/hooks/useNotificationHook';
 import { default as ConfigService, default as configService } from '@/services/configService';
 import {
   ConfigFormData,
+  LinkDataType,
   LinkTableDataType,
+  MapDataType,
   MapTableDataType,
   StatusDataType,
 } from '@/types';
@@ -43,6 +46,7 @@ const EditDinLocal = () => {
   const [autoStart, setAutoStart] = useState(false);
   const [title, setTitle] = useState('');
   const [dinLocal, setDinLocal] = useState<string>();
+  const [SID, setSID] = useState<string>('');
   const { notify, contextHolder } = useCustomNotification();
   const [linksData, setLinksData] = useState<LinkTableDataType[]>([]);
   const [mapsData, setMapsData] = useState<MapTableDataType[]>([]);
@@ -67,11 +71,7 @@ const EditDinLocal = () => {
   };
 
   const handleEditLink = (data: LinkTableDataType) => {
-    router.push(`/${locale}/admin/configurazione/editLink/${data.source.id}`);
-  };
-
-  const handleEditMap = (data: MapTableDataType) => {
-    router.push(`/${locale}/admin/configurazione/editMap/${data.source.cdin.id}`);
+    router.push(`/${locale}/admin/configurazione/editLink/${data.id}`);
   };
 
   const getIconForLinks = (tipologia: number): ReactNode => {
@@ -108,7 +108,7 @@ const EditDinLocal = () => {
         const maps = data.map((map) => ({
           id: map.cdin.id,
           din: map.cdin.din,
-          tech: map.cdin.links.map((link) => getIconForLinks(link.link)),
+          tech: map.cdin.links?.[0]?.link ?? '-',
           source: map,
         }));
         setMapsData(maps);
@@ -136,8 +136,37 @@ const EditDinLocal = () => {
     router.push(`/${locale}/admin/configurazione/newLink`);
   };
 
+  const [isAddMapModalVisible, setIsAddMapModalVisible] = useState(false);
+
+  const [editMode, setEditMode] = useState<'create' | 'edit'>('create');
+  const [selectedMapId, setSelectedMapId] = useState<number | null>(null);
+
+  const handleEditMap = (data: MapTableDataType) => {
+    setSelectedMapId(data.id ?? null);
+    setEditMode('edit');
+    setIsAddMapModalVisible(true);
+  };
+
   const handleAddMap = () => {
-    router.push(`/${locale}/admin/configurazione/newMap`);
+    setSelectedMapId(null);
+    setEditMode('create');
+    setIsAddMapModalVisible(true);
+  };
+
+  const handleCloseAddMapModal = () => {
+    setIsAddMapModalVisible(false);
+    setSelectedMapId(null);
+    setEditMode('create');
+  };
+
+  const handleMapCreated = async (din: string) => {
+    try {
+      await fetchMaps();
+      setIsAddMapModalVisible(false);
+      notify('success', t('success'), t('successCreateMap'));
+    } catch (error) {
+      notify('error', t('error'), t('errorGetLinksMap'));
+    }
   };
 
   const onFinish = async (values: ConfigFormData) => {
@@ -169,6 +198,7 @@ const EditDinLocal = () => {
           acpt_all: data.acpt_all || false,
         });
         setDinLocal(data.title);
+        setSID(data.din.sid);
       })
       .catch((error) => {
         console.error('Errore:', error);
@@ -188,7 +218,6 @@ const EditDinLocal = () => {
 
   const handleGoBack = () => {
     if (!isDataSaved) {
-      notify('warning', tBack('warning'), tBack('warningContent'));
       Modal.confirm({
         title: tBack('title'),
         content: tBack('content'),
@@ -207,10 +236,10 @@ const EditDinLocal = () => {
     form.submit();
   };
 
-  const handleDeleteLink = async (link: LinkTableDataType) => {
-    if (!link.source.id) return;
+  const handleDeleteLink = async (link: LinkDataType) => {
+    if (!link?.id) return;
     try {
-      await ConfigService.deleteLink(link.source.id);
+      await ConfigService.deleteLink(link.id);
       fetchLinks();
       notify('success', t('success'), t('successDeleteLink'));
     } catch (error) {
@@ -220,9 +249,9 @@ const EditDinLocal = () => {
   };
 
   const handleDeleteMap = async (map: MapTableDataType) => {
-    if (!map.source.cdin.id) return;
+    if (!map?.id) return;
     try {
-      await ConfigService.deleteMap(map.source.cdin.id);
+      await ConfigService.deleteMap(map.id);
       fetchMaps();
       notify('success', t('success'), t('successDeleteMap'));
     } catch (error) {
@@ -232,9 +261,7 @@ const EditDinLocal = () => {
   };
 
   useEffect(() => {
-    const socket = new WebSocket(
-      process.env.NEXT_PUBLIC_WS_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'ws://localhost:3000'
-    );
+    const socket = new WebSocket(`${process.env.NEXT_PUBLIC_API_BASE_URL}`);
 
     socket.onmessage = (event) => {
       console.log('Ricevuto messaggio', event.data);
@@ -274,7 +301,7 @@ const EditDinLocal = () => {
   const onSend = async () => {
     try {
       if (selectedMap) {
-        await configService.sendPayload(Number(selectedMap.source.cdin.din), status, value);
+        await configService.sendPayload(Number(selectedMap.din), status, value);
         notify('success', t('success'), t('successSend'));
       }
     } catch (error) {
@@ -286,7 +313,7 @@ const EditDinLocal = () => {
   const items: TabsProps['items'] = [
     {
       key: '1',
-      label: 'Domotica',
+      label: 'Node',
       children: (
         <DinLocalForm
           form={form}
@@ -298,6 +325,7 @@ const EditDinLocal = () => {
           showEnabledCheckBox={true}
           showAcceptAllCheckBox={true}
           showPowerActions={true}
+          showPowerActionsProcessor={true}
           showSaveButton={false}
           showStatus={true}
           statusData={statusData}
@@ -349,6 +377,14 @@ const EditDinLocal = () => {
               onSend={onSend}
             />
           )}
+          <ModalMap
+            isVisible={isAddMapModalVisible}
+            onClose={handleCloseAddMapModal}
+            sid={SID}
+            onMapCreated={handleMapCreated}
+            selectedMapId={selectedMapId}
+            mode={editMode}
+          />
         </>
       ),
     },

@@ -50,9 +50,7 @@ const LanguageSwitcher = () => {
         style={{
           backgroundColor: 'transparent',
           border: 'none',
-          color: 'white',
-          marginTop: 20,
-          marginRight: 20,
+          color: 'black',
           padding: '4px 8px',
           display: 'flex',
           alignItems: 'center',

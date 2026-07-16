@@ -11,83 +11,133 @@
  * francescopantusa98@gmail.com - initial implementation
  *
  */
-import { Badge, Col, Divider, Form, FormInstance, Row, Space, Typography } from 'antd';
+import { Badge, Card, Col, Divider, Form, FormInstance, Row, Statistic } from 'antd';
 import { useTranslations } from 'next-intl';
 import React from 'react';
-
-const { Text } = Typography;
-
 const NodoFormGenerali = ({ form }: { form: FormInstance }) => {
-  const marginBottom = { marginBottom: -22 };
   const t = useTranslations('NodoForm');
+
   const style = {
-    minWidth: '550px',
-    width: '50%',
+    width: '100%',
     maxWidth: '680px',
-    marginLeft: 30,
-    marginTop: -30,
+    margin: '0 auto',
+    padding: '0 15px',
   };
 
-  const renderField = (value: string | number | boolean | undefined) => (
-    <Text strong style={{ fontSize: '0.8rem' }}>
-      {value !== undefined ? String(value) : '-'}
-    </Text>
-  );
+  const containerStyle = {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '1.5rem',
+  };
+
+  const renderField = (value: string | number | boolean | undefined) => (value !== undefined ? String(value) : '-');
 
   const renderEnableField = (value: boolean | undefined) => {
     const isEnabled = value === true;
     return (
-      <Space>
-        <Text strong style={{ fontSize: '0.8rem' }}>
-          {isEnabled ? t('enabled') : t('disabled')}
-        </Text>
-        <Badge status={isEnabled ? 'success' : 'error'} />
-      </Space>
+      <Card
+        size="small"
+        bordered={false}
+        bodyStyle={{
+          padding: '4px',
+          minHeight: '20px',
+        }}
+        style={{ boxShadow: '5px 8px 24px 5px rgba(208, 216, 243, 0.6)', cursor: 'default' }}
+      >
+        <Statistic
+          title={
+            <span
+              style={{
+                fontSize: '0.75rem',
+                marginBottom: '2px',
+              }}
+            >
+              {isEnabled ? t('enabled') : t('disabled')}
+            </span>
+          }
+          value={''}
+          formatter={() => ''}
+          valueStyle={{
+            color: 'white',
+            fontSize: '0.85rem',
+          }}
+          prefix={<Badge status={isEnabled ? 'success' : 'error'} />}
+        />
+      </Card>
     );
   };
+
   return (
-    <div
-      style={{
-        minWidth: '250px',
-        width: '100%',
-        display: 'flex',
-        justifyItems: 'center',
-        justifyContent: 'left',
-        marginTop: '25px',
-      }}
-    >
+    <div style={containerStyle}>
       <Form form={form} layout="vertical" style={style}>
         <Form.Item name="id" noStyle>
           <input type="hidden" />
         </Form.Item>
-        <Row gutter={16} style={marginBottom}>
-          <Col span={8}>
-            <Form.Item name="sid" label="SID">
-              {renderField(form.getFieldValue('sid'))}
-            </Form.Item>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={24} md={12}>
+            <Card
+              size="small"
+              bordered={false}
+              bodyStyle={{
+                padding: '4px',
+                minHeight: '20px',
+              }}
+              style={{ boxShadow: '5px 8px 24px 5px rgba(208, 216, 243, 0.6)', cursor: 'default' }}
+            >
+              <Statistic
+                title={
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      marginBottom: '2px',
+                    }}
+                  >
+                    SID
+                  </span>
+                }
+                value={renderField(form.getFieldValue('sid'))}
+                valueStyle={{
+                  color: 'black',
+                  fontSize: '0.85rem',
+                }}
+              />
+            </Card>
           </Col>
-          <Col span={8}>
-            <Form.Item name="din" label="DIN">
-              {renderField(form.getFieldValue('din'))}
-            </Form.Item>
+          <Col xs={24} sm={24} md={12}>
+            <Card
+              size="small"
+              bordered={false}
+              bodyStyle={{
+                padding: '4px',
+                minHeight: '20px',
+              }}
+              style={{ boxShadow: '5px 8px 24px 5px rgba(208, 216, 243, 0.6)', cursor: 'default' }}
+            >
+              <Statistic
+                title={
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      marginBottom: '2px',
+                    }}
+                  >
+                    DIN
+                  </span>
+                }
+                value={renderField(form.getFieldValue('din'))}
+                valueStyle={{
+                  color: 'black',
+                  fontSize: '0.85rem',
+                }}
+              />
+            </Card>
           </Col>
         </Row>
-        <Divider style={{ margin: '12px 0' }} />
-        <Row gutter={16} style={marginBottom}>
-          <Col span={8}>
-            <Form.Item name="latitudine" label={t('latitude')}>
-              {renderField(form.getFieldValue('latitudine'))}
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name="longitudine" label={t('longitude')}>
-              {renderField(form.getFieldValue('longitudine'))}
-            </Form.Item>
-          </Col>
-        </Row>
-        <Divider style={{ margin: '12px 0' }} />
-        <Row gutter={8}>
-          <Col span={8}>
+        <Divider style={{ margin: '0.75rem 0' }} />
+
+        <Row gutter={[8, 8]}>
+          <Col xs={24} sm={24} md={12}>
             <Form.Item name="enable">{renderEnableField(form.getFieldValue('enable'))}</Form.Item>
           </Col>
         </Row>
@@ -95,5 +145,4 @@ const NodoFormGenerali = ({ form }: { form: FormInstance }) => {
     </div>
   );
 };
-
 export default NodoFormGenerali;
