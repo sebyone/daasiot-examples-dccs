@@ -16,11 +16,31 @@ const sdkPackage = require("daas-sdk/package.json");
 const hver = "nodeJS";
 
 let nodeInstance = null;
+let loadedLibraryPath = null;
+
+function isSupportedPlatform() {
+    return process.platform === 'linux' && process.arch === 'x64';
+}
+
+function createUnsupportedPlatformError() {
+    const error = new Error(
+        `daas-sdk@${sdkPackage.version} currently supports Linux x64 only ` +
+        `(current runtime: ${process.platform} ${process.arch}).`
+    );
+    error.code = 'DAAS_PLATFORM_UNSUPPORTED';
+    return error;
+}
 
 function loadNode() {
+    if (!isSupportedPlatform()) {
+        throw createUnsupportedPlatformError();
+    }
+
     if (!nodeInstance) {
-        const { DaasIoT } = require('daas-sdk');
-        nodeInstance = new DaasIoT(hver);
+        const sdk = require('daas-sdk');
+        const loaded = sdk.loadLibrary(process.env.DAASIOT_LIB);
+        loadedLibraryPath = loaded.libraryPath;
+        nodeInstance = new loaded.DaasIoT(hver);
     }
 
     return nodeInstance;
@@ -52,11 +72,29 @@ function getStatus() {
 }
 
 function getVersion() {
+    if (!isSupportedPlatform()) {
+        return {
+            daasSdkPackage: sdkPackage.version,
+            node: process.version,
+            nodeAddonApi: process.versions.napi,
+            platform: process.platform,
+            architecture: process.arch,
+            supported: false,
+            nativeLoaded: false,
+        };
+    }
+
+    const nativeVersion = loadNode().getVersion();
     return {
+        ...nativeVersion,
         daasSdkPackage: sdkPackage.version,
         node: process.version,
         nodeAddonApi: process.versions.napi,
-        nativeLoaded: nodeInstance !== null,
+        platform: process.platform,
+        architecture: process.arch,
+        supported: true,
+        nativeLoaded: true,
+        libraryPath: loadedLibraryPath,
     };
 }
 
@@ -70,7 +108,7 @@ function stop() {
 }
 
 function restart() {
-    return loadNode().restart();
+    return loadNode().doReset();
 }
 
 async function send(din, typeset, data) {
@@ -92,4 +130,5 @@ module.exports = {
     getVersion,
     restart,
     send,
+    isSupportedPlatform,
 }

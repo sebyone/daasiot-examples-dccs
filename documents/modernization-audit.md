@@ -105,13 +105,30 @@ Il modello dati comprende `Din`, `DinLocal`, `DinLink`, `DinHasDin`, `Device`,
 - audit backend: 2 vulnerabilità moderate residue nella catena Sequelize/UUID,
   senza aggiornamento upstream non-breaking disponibile.
 
+## Branch daas-sdk 0.22.0
+
+Il branch `modernization/daas-sdk-0.22.0` parte dalla stessa base applicativa
+modernizzata del branch legacy e sostituisce soltanto il confine DaaS.
+
+- supporto corrente: Linux x64;
+- runtime verificato: Node.js 20.20.2, npm 10.8.2;
+- `libdaas.so` fornita localmente e inclusa nel pacchetto npm;
+- addon `daas.node` compilato durante `npm install`;
+- caricamento esplicito tramite `DaasIoT.loadLibrary(path)`;
+- override opzionale tramite `DAASIOT_LIB`;
+- versione nativa rilevata: `0.22.0`;
+- build SDK, test SDK, installazione backend, 8 test backend, migration e
+  smoke test reale completati in WSL2/Ubuntu Linux x64;
+- `/health/live`, `/health/ready`, `/api/version` e `/api/status`: `200`;
+- shutdown verificato con arresto dei thread DaaS e uscita pulita di Node.
+
 ## Fasi successive
 
-1. Creare, quando disponibile la libreria locale, il branch dedicato
-   `daas-sdk@0.22.0` partendo dalla stessa base modernizzata.
-2. Introdurre validazione schema per input e output API.
-3. Suddividere progressivamente le route in controller, service e repository,
+1. Verificare comunicazione DDO end-to-end tra due nodi `0.22.0` su Linux.
+2. Preparare distribuzione e CI Linux del pacchetto npm locale.
+3. Introdurre validazione schema per input e output API.
+4. Suddividere progressivamente le route in controller, service e repository,
    mantenendo transazioni esplicite.
-4. Generare i tipi frontend dal contratto OpenAPI e dividere `configService`.
-5. Correggere i warning React Hooks e rimuovere codice/import inutilizzati.
-6. Ampliare la copertura con test API, component test ed end-to-end.
+5. Generare i tipi frontend dal contratto OpenAPI e dividere `configService`.
+6. Correggere i warning React Hooks e rimuovere codice/import inutilizzati.
+7. Ampliare la copertura con test API, component test ed end-to-end.

@@ -15,6 +15,7 @@
         "build": "npm run check",
         "check": "eslint src test && node --check src/server.js",
         "test": "node --test",
+        "smoke": "cross-env NODE_ENV=development node scripts/smoke.js",
         "db:migrate": "cross-env NODE_ENV=development sequelize-cli db:migrate",
         "db:seed": "cross-env NODE_ENV=development sequelize-cli db:seed:all",
         "db:reset": "cross-env NODE_ENV=development sequelize-cli db:migrate:undo:all"
@@ -24,7 +25,7 @@
     "license": "ISC",
     "dependencies": {
         "cors": "^2.8.6",
-        "daas-sdk": "0.17.9",
+        "daas-sdk": "file:vendor/daas-sdk-0.22.0.tgz",
         "ejs": "^3.1.10",
         "express": "^5.2.1",
         "morgan": "^1.11.0",

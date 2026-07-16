@@ -51,10 +51,17 @@ npm run build
 npm test
 ```
 
-Questo branch usa esattamente `daas-sdk@0.17.9` ed è pensato per essere
-eseguito con Node.js 20.20.2. I comportamenti e i limiti interni della SDK
-legacy vengono preservati e non fanno parte del refactoring applicativo.
+Questo branch usa `daas-sdk@0.22.0` e supporta attualmente Linux x64. Il
+pacchetto npm locale è salvato in
+`web-console/be/vendor/daas-sdk-0.22.0.tgz`: contiene `libdaas.so` e compila
+l'addon Node durante `npm install`.
 
-L'integrazione DaaS è isolata sotto `web-console/be/src/daas`, così il futuro
-branch basato su `daas-sdk@0.22.0` potrà sostituire l'adapter senza riscrivere
-il resto del backend.
+Requisiti aggiuntivi Linux:
+
+```bash
+sudo apt-get install build-essential python3
+```
+
+Su Windows il frontend e le API non native possono essere analizzati, ma il
+runtime DaaS viene segnalato come non disponibile. L'esecuzione completa di
+questo branch deve avvenire su Linux x64.

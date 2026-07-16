@@ -29,12 +29,19 @@ Endpoint operativi:
 
 ## Configurazione DaaS
 
-- `DAAS_LOCAL_RECEIVER_ID`: receiver locale da usare, default `1`.
+- `DAAS_LOCAL_RECEIVER_ID`: receiver locale da usare, default `1`;
+- `DAASIOT_LIB`: percorso opzionale a una `libdaas.so` esterna.
 
-Questo branch fissa `daas-sdk` alla versione `0.17.9` e Node.js alla versione
-`20.20.2`. Il backend utilizza la SDK legacy con il comportamento già previsto
-dal progetto originale, senza introdurre controlli bloccanti sui suoi difetti
-interni.
+Questo branch usa `daas-sdk@0.22.0` su Linux x64 e Node.js `20.20.2`.
+Il pacchetto locale in `vendor/daas-sdk-0.22.0.tgz` include il precompilato
+`libdaas.so`; durante `npm install` viene compilato l'addon
+`build/Release/daas.node`.
 
-La futura libreria `0.22.0` potrà essere integrata sostituendo
-l'implementazione sotto `src/daas`, senza modificare bootstrap e API.
+Verifica completa:
+
+```bash
+npm ci
+npm run db:migrate
+npm test
+npm run smoke
+```
