@@ -1,0 +1,27 @@
+.form-geo-container {
+  width: 100%;
+}
+
+.geo-field {
+  font-size: 0.8rem;
+  padding: 8px;
+  word-break: break-word;
+  white-space: nowrap;
+}
+
+.geo-divider {
+  margin: 8px 0;
+  width: 100%;
+}
+
+@media (max-width: 576px) {
+  .geo-field {
+    padding: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  .form-geo-container form {
+    margin: 20px 15px;
+  }
+}

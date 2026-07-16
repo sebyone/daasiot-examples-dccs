@@ -1,0 +1,9 @@
+.user {
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .user {
+    font-size: 14px;
+  }
+}

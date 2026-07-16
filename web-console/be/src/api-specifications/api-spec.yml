@@ -1,11 +1,11 @@
 openapi: "3.0.3"
 info:
-  title: DaaS-NodeJS
-  version: "1.1"
+  title: daasiot-dccs
+  version: "1.2.1"
 
   contact:
     name: API Support
-    email: alessio.farfaglia@gmail.com
+    email: a.farfaglia@sebyone.it
 
   license:
     name: MPL-2.0
@@ -20,7 +20,7 @@ servers:
         description: default port for the development server
 
 externalDocs:
-  url: "https://github.com/sebyone/daas-nodejs"
+  url: "https://github.com/sebyone/daasiot-examples-dccs"
 
 tags:
   - name: configuration
@@ -193,12 +193,9 @@ components:
         cdin:
           $ref: "#/components/schemas/DinWithLinksAndReceiver"
 
-    Device:
+    DeviceCreationObject:
       type: object
       properties:
-        id:
-          type: integer
-          description: ID del device
         device_model_id:
           type: integer
           description: ID del modello del device
@@ -208,7 +205,9 @@ components:
         name:
           type: string
           description: Nome del device
-          maxLength: 45
+        serial:
+          type: string
+          description: Seriale del device
         latitude:
           type: number
           description: latitudine
@@ -217,6 +216,19 @@ components:
           type: number
           description: longitudine
           example: 16.2536
+      required:
+        - din_id
+        - name
+        - serial
+
+    Device:
+      allOf:
+        - $ref: "#/components/schemas/DeviceCreationObject"
+        - type: object
+          properties:
+            id:
+              type: integer
+              description: ID del Device
 
     DeviceFull:
       allOf:
@@ -228,24 +240,28 @@ components:
             din:
               $ref: "#/components/schemas/Din"
 
-    DeviceModel:
+    DeviceModelCreationObject:
       type: object
       properties:
-        id:
-          type: integer
-          description: ID del modello del device
-          nullable: false
         device_group_id:
           type: integer
           description: ID del gruppo del modello
-          nullable: false
         description:
           type: string
           description: descrizione del modello
-        serial:
+        name:
           type: string
-          description: seriale del modello
-          maxLength: 20
+          description: nome del modello
+
+    DeviceModel:
+      allOf:
+        - $ref: "#/components/schemas/DeviceModelCreationObject"
+        - type: object
+          properties:
+            id:
+              type: integer
+              description: ID del modello del device
+              nullable: false
 
     DeviceModelWithResources:
       allOf:
@@ -373,6 +389,9 @@ components:
             2: i16
             3: f32
             4: string
+            5: i8
+            6: i64
+            7: f64
           nullable: false
         default_value:
           type: string
@@ -383,16 +402,12 @@ components:
           description: valore sicuro della property, usato in caso di errore
           maxLength: 45
 
-    DeviceModelFunction:
+    DeviceModelFunctionBase:
       type: object
       description: >
         Funzione di un modello di device
         Interpretabile come definizione per le funzioni di un device che sono istanze di questa funzione
       properties:
-        id:
-          type: integer
-          description: ID della funzione
-          nullable: false
         name:
           type: string
           description: nome della funzione
@@ -421,6 +436,27 @@ components:
           items:
             $ref: "#/components/schemas/DeviceModelFunctionProperty"
           description: lista delle notifiche della funzione
+
+    DeviceModelFunctionCreationObject:
+      allOf:
+        - $ref: "#/components/schemas/DeviceModelFunctionBase"
+        - type: object
+          properties:
+            properties:
+              type: array
+              items:
+                $ref: "#/components/schemas/DeviceModelFunctionProperty"
+              description: lista delle properties della funzione
+
+    DeviceModelFunction:
+      allOf:
+        - $ref: "#/components/schemas/DeviceModelFunctionBase"
+        - type: object
+          properties:
+            id:
+              type: integer
+              description: ID della funzione
+              nullable: false
 
     DeviceFunctionProperty:
       type: object
@@ -1545,32 +1581,9 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                device_model_id:
-                  type: integer
-                  description: ID del modello del device
-                din_id:
-                  type: integer
-                  description: ID del DIN associato al device
-                name:
-                  type: string
-                  description: Nome del device
-                  maxLength: 45
-                latitude:
-                  type: number
-                  description: latitudine
-                  example: 39.3015
-                longitude:
-                  type: number
-                  description: longitudine
-                  example: 16.2536
-              required:
-                - device_model_id
-                - din_id
-                - name
+              $ref: "#/components/schemas/DeviceCreationObject"
               example:
-                device_model_id: 1
+                device_model_id: 4
                 din_id: 1
                 name: "Device 1"
                 latitude: 39.3015
@@ -1640,30 +1653,12 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                device_model:
-                  $ref: "#/components/schemas/DeviceModel"
-                device_model_id:
-                  type: integer
-                  description: ID del modello del device
-                din_id:
-                  type: integer
-                  description: ID del DIN associato al device
-                name:
-                  type: string
-                  description: Nome del device
-                  maxLength: 45
-                latitude:
-                  type: number
-                  description: latitudine
-                  example: 39.3015
-                longitude:
-                  type: number
-                  description: longitudine
-                  example: 16.2536
-                din:
-                  $ref: "#/components/schemas/Din"
+              allOf:
+                - $ref: "#/components/schemas/DeviceCreationObject"
+                - type: object
+                  properties:
+                    din:
+                      $ref: "#/components/schemas/Din"
               example:
                 name: "device 2024"
                 din: { "sid": "100", "din": "87" }
@@ -1771,6 +1766,61 @@ paths:
         default:
           $ref: "#/components/responses/InternalError"
 
+  /devices/{deviceId}/reports/:
+    parameters:
+      - name: deviceId
+        in: path
+        description: ID del device che ha ricevuto o inviato i DDO
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          example: 1
+    get:
+      description: Ritorna i ddo ricevuti o inviati da un device sotto formato di pdf o excel.
+      tags:
+        - devices
+        - DDOs
+      parameters:
+        - name: extension
+          required: false
+          in: query
+          description: definisce l'estensione del file, se pdf o xlsx
+          schema:
+            type: string
+            enum: [pdf, xlsx]
+            example: pdf
+      responses:
+        "200":
+          description: Pagina di DDO e informazioni sulla paginazione
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+              # examples:
+              #   sampleFile:
+              #     summary: Un esempio di file PDF
+              #     externalValue: "../../static/public/img/reporting_templates/esempio_report.pdf"
+        "404":
+          description: Device non trovato.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "415":
+          description: Estensione non valida o non supportata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: problema nella generazione del report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   #region Device Models
 
   /device_models:
@@ -1822,40 +1872,27 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                device_group_id:
-                  type: integer
-                  description: ID del gruppo del modello
-                description:
-                  type: string
-                  description: Descrizione del modello
-                serial:
-                  type: string
-                  description: Seriale del modello
-                  maxLength: 20
-
-                resources:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/DeviceModelResource"
-                    example:
-                      name: "cover"
-                      link: "https://m.media-amazon.com/images/I/71D4E5DS-qL.jpg"
-                      resource_type: 1
-
-                functions:
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/DeviceModelFunction"
+              allOf:
+                - $ref: "#/components/schemas/DeviceModelCreationObject"
+                - type: object
+                  properties:
+                    device_group:
+                      $ref: "#/components/schemas/DeviceModelGroup"
+                    resources:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/DeviceModelResource"
+                    functions:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/DeviceModelFunction"
 
               required:
-                - device_group_id
                 - description
                 - serial
             example:
-              description: ESP32
-              serial: "1234567890"
+              name: ESP32
+              description: ESP32 DIY Modules
               device_group:
                 title: ESP32 DIY Modules
                 description: ESP32 DIY Modules
@@ -1863,7 +1900,7 @@ paths:
               resources:
                 - name: cover
                   link: https://m.media-amazon.com/images/I/71D4E5DS-qL.jpg
-                  resource_type: 1
+                  resource_type: 4
                 - name: datasheet
                   link: https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf
                   resource_type: 2
@@ -1873,6 +1910,9 @@ paths:
                 - name: programming guide
                   link: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html
                   resource_type: 1
+                - name: firmware
+                  link: http://example.com/firmware.dsfw
+                  resource_type: 5
               functions:
                 - name: PID1
                   parameters:
@@ -1961,22 +2001,11 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                device_group_id:
-                  type: integer
-                  description: ID del gruppo del modello
-                description:
-                  type: string
-                  description: Descrizione del modello
-                serial:
-                  type: string
-                  description: Seriale del modello
-                  maxLength: 20
+              $ref: "#/components/schemas/DeviceModelCreationObject"
               example:
                 device_group_id: 1
-                description: "Modello di device 1"
-                serial: "1234567890"
+                name: "Modello 1"
+                description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas egestas sed felis eu blandit. Nullam maximus id arcu malesuada ultricies. In varius odio ac tempus condimentum. "
       responses:
         "200":
           description: Modello di device aggiornato con successo.
@@ -2017,6 +2046,35 @@ paths:
                   message:
                     type: string
                     description: Messaggio di successo
+        "404":
+          description: Modello di device non trovato.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/InternalError"
+          
+  /device_models/find/{deviceName}:
+    parameters:
+      - name: deviceName
+        in: path
+        description: nome del device
+        required: true
+        schema:
+          type: String
+
+    get:
+      description: Ritorna un modello di device specifico.
+      tags:
+        - device models
+      responses:
+        "200":
+          description: Modello di device trovato.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceModelFull"
         "404":
           description: Modello di device non trovato.
           content:
@@ -3042,6 +3100,41 @@ paths:
                     description: Messaggio di successo
         "404":
           description: Funzione del device non trovata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          $ref: "#/components/responses/InternalError"
+
+  /devices/{deviceId}/functions/apply:
+    post:
+      description: >
+        Applica le funzioni del device fisico utilizzando la rete DaaS per inviare i dati.
+      tags:
+        - devices
+        - programming
+        - device functions
+      parameters:
+        - name: deviceId
+          in: path
+          description: ID del device
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Funzioni del device applicate con successo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Messaggio di successo
+        "404":
+          description: Device non trovato.
           content:
             application/json:
               schema:

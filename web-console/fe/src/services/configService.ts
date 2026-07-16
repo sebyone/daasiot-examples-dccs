@@ -14,7 +14,9 @@
 import {
   ConfigData,
   ConfigFormData,
+  CreateDevice,
   DataDevice,
+  Dev,
   Device,
   DeviceFunction,
   DeviceGroup,
@@ -29,12 +31,39 @@ import {
   MapDataType,
   ReceiverDataType,
   StatusDataType,
+  Version,
 } from '@/types';
 import axiosInstance from '@/utils/api';
 
 const ConfigService = {
   /**
+   * Restituisce le informazioni sullo stack DaaS che sta alla base del nodo
+   * Promise<Version> - oggetto Version
+   */
+  getVersion: async (): Promise<Version> => {
+    try {
+      const response = await axiosInstance.get('/version');
+      return response.data;
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
+  },
+  /**
    * Recupera l'elenco di tutti i receivers
+   * Promise<ConfigData[]> - Array di oggetti ConfigData
+   */
+  getReceivers: async (): Promise<ConfigData[]> => {
+    try {
+      const response = await axiosInstance.get('/receivers');
+      return response.data;
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
+  },
+  /**
+   * Recupera l'elenco di tutti i receivers da visualizzare nella tabella
    * Promise<DinLocalDataType[]> - Array di oggetti DinLocalDataType
    */
   getAll: async (): Promise<ReceiverDataType[]> => {
@@ -187,6 +216,21 @@ const ConfigService = {
   },
 
   /**
+   * Aggiorna un nodo mappato esistente
+   * id - ID del nodo mappato da aggiornare
+   * mapData - Oggetto DinDataType con i nuovi dati del nodo mappato
+   */
+  updateMap: async (mapData: DinFormData): Promise<void> => {
+    try {
+      const response = await axiosInstance.post(`/receivers/1/remotes`, mapData);
+      return response.data;
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Recupera un link specifico tramite il suo ID
    * id - ID del link da recuperare
    * Promise<LinkDataType> - Oggetto LinkDataType del link richiesto
@@ -308,6 +352,21 @@ const ConfigService = {
   },
 
   /**
+   * Invia regole di una funzione
+   * deviceId - ID del device
+   * func - Oggetto DeviceFunction
+   */
+  programFunction: async (deviceId: number, func: DeviceFunction): Promise<void> => {
+    try {
+      const response = await axiosInstance.post(`/devices/${deviceId}/functions/apply`, func);
+      return response.data;
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Elimina una funzione specifica di un device
    * id - ID del device
    */
@@ -320,14 +379,9 @@ const ConfigService = {
     }
   },
 
-  /**
-   * Aggiorna un nodo mappato esistente
-   * id - ID del nodo mappato da aggiornare
-   * mapData - Oggetto DinDataType con i nuovi dati del nodo mappato
-   */
-  updateMap: async (id: number, mapData: DinFormData): Promise<void> => {
+  createDevice: async (device: Omit<CreateDevice, 'id'>) => {
     try {
-      const response = await axiosInstance.post(`/receivers/1/remotes/${id}`, mapData);
+      const response = await axiosInstance.post<CreateDevice>('/devices', device);
       return response.data;
     } catch (error) {
       console.error('Error:', error);
@@ -509,6 +563,36 @@ const ConfigService = {
   },
 
   /**
+   * Recupera un device_model specifico tramite il suo ID
+   * id - ID del device_model da recuperare
+   * Promise<DeviceModel> - Oggetto DeviceModel del device_model richiesto
+   */
+  getDeviceModelById: async (deviceModelId: number): Promise<Dev> => {
+    try {
+      const response = await axiosInstance.get(`/device_models/${deviceModelId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Recupera un device_model specifico tramite il suo nome
+   * deviceName - Nome del device_model da recuperare
+   * Promise<DeviceModel> - Oggetto DeviceModel del device_model richiesto
+   */
+  getDeviceModelByName: async (deviceName: string): Promise<Dev> => {
+    try {
+      const response = await axiosInstance.get(`/device_models/find/${deviceName}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Restituisce tutti i modelli di device di un gruppo
    * Promise<DeviceModel> - Oggetto DeviceModel contenente i modelli di un gruppo
    */
@@ -524,6 +608,25 @@ const ConfigService = {
           offset: offset,
           limit: limit,
           q: q,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    }
+  },
+
+  getDeviceReport: async (deviceId: number, extension: 'pdf' | 'xlsx'): Promise<Blob> => {
+    try {
+      const response = await axiosInstance.get(`/devices/${deviceId}/reports`, {
+        params: { extension },
+        responseType: 'blob',
+        headers: {
+          Accept:
+            extension === 'pdf'
+              ? 'application/pdf'
+              : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         },
       });
       return response.data;

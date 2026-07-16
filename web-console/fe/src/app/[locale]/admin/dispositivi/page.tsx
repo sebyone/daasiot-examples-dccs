@@ -13,34 +13,44 @@
  */
 'use client';
 import { useCustomNotification } from '@/hooks/useNotificationHook';
+import { useWindowSize } from '@/hooks/useWindowSize';
 import { default as ConfigService, default as configService } from '@/services/configService';
-import { DataDevice, DDOView } from '@/types';
+import { DataDevice, DDO, DeviceFunction, Event, Function } from '@/types';
 import {
   DeploymentUnitOutlined,
+  DownloadOutlined,
+  DownOutlined,
   EditFilled,
   EnvironmentOutlined,
+  FileOutlined,
   InfoCircleOutlined,
   LoadingOutlined,
   PlusCircleOutlined,
   SearchOutlined,
+  SendOutlined,
   SettingOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons';
 import {
   Button,
   Descriptions,
+  Dropdown,
   Empty,
   Form,
   Input,
   Layout,
   List,
+  Menu,
+  message,
   Modal,
   Pagination,
   Space,
+  Switch,
   Table,
   Tabs,
   TabsProps,
 } from 'antd';
+import dayjs from 'dayjs';
 import debounce from 'debounce';
 import 'leaflet/dist/leaflet.css';
 import { useLocale, useTranslations } from 'next-intl';
@@ -57,36 +67,42 @@ const NodoFormHeader = dynamic(() => import('@/components/NodoFormHeader'), { ss
 const Panel = dynamic(() => import('@/components/Panel'), { ssr: false });
 const PanelView = dynamic(() => import('@/components/PanelView'), { ssr: false });
 const PayloadContentViewer = dynamic(() => import('@/components/PayloadContentView'), { ssr: false });
-const CardDispositivoFactory = dynamic(() => import('@/components/CardDispositivoFactory'), { ssr: false });
+
 const ParametersTab = dynamic(() => import('@/components/ParametersTab'), { ssr: false });
 
 export default function Dispositivi() {
   const router = useRouter();
   const t = useTranslations('Dispositivi');
-  const [title, setTitle] = useState('');
   const [formGenerali] = Form.useForm();
   const [formHeader] = Form.useForm();
   const [searchTerm, setSearchTerm] = useState('');
   const [devicesData, setDevicesData] = useState<DataDevice[]>([]);
   const { notify, contextHolder } = useCustomNotification();
   const [selectedDevice, setSelectedDevice] = useState<DataDevice | null>(null);
-  const [showTestComponent, setShowTestComponent] = useState(false);
-  const [status, setStatus] = useState<boolean>(false);
-  const [value, setValue] = useState<number>(0);
-  const [ws, setSocket] = useState<WebSocket | null>(null);
-  const [dinOptions, setDinOptions] = useState<number[]>([]);
-  const [selectedDin, setSelectedDin] = useState<number | null>(null);
-  const [showTestControl, setShowTestControl] = useState<boolean>(false);
   const [isDeviceSelected, setIsDeviceSelected] = useState(false);
   const [isModalInfoEventVisible, setIsModalInfoEventVisible] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<DDOView | null>(null);
+  const [selectedRow, setSelectedRow] = useState<DDO>();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const locale = useLocale();
   const [activeTabKey, setActiveTabKey] = useState('1');
-  const [ddos, setDdos] = useState<DDOView[]>([]);
+  const [ddos, setDdos] = useState<DDO[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [filterEnabled, setFilterEnabled] = useState(false);
+  const [functions, setFunctions] = useState<Function[]>([]);
+  const [selectedFunctions, setSelectedFunctions] = useState<DeviceFunction[]>([]);
+  const [checkedFunctions, setCheckedFunctions] = useState<number[]>([]);
+  const [status, setStatus] = useState<boolean>(false);
+  const [value, setValue] = useState<number>(0);
+  const [showTestComponent, setShowTestComponent] = useState(false);
+  const [selectedDin, setSelectedDin] = useState<number | null>(null);
+  const [dinOptions, setDinOptions] = useState<number[]>([]);
+  const [ws, setSocket] = useState<WebSocket | null>(null);
+  const [alignment, setAlignment] = useState<string>('Sconosciuto');
+  const [linkStatus, setLinkStatus] = useState<boolean>(true);
+  const { width } = useWindowSize();
+  const wh = width <= 1920;
 
   const MapComponent = dynamic(() => import('@/components/Map'), {
     ssr: false,
@@ -98,90 +114,83 @@ export default function Dispositivi() {
     setPageSize(pageSize);
   };
 
-  const handleViewClick = (record: DDOView) => {
+  const handleViewClick = (record: DDO) => {
     setSelectedRow(record);
     setIsModalInfoEventVisible(true);
   };
 
   const handleModalClose = () => {
     setIsModalInfoEventVisible(false);
-    setSelectedRow(null);
+    setSelectedRow(undefined);
   };
 
   const columnsEvents = [
     {
-      title: 'Timestamp',
+      title: <span style={{ display: 'flex', justifyContent: 'center' }}>Timestamp</span>,
+      width: wh ? '12%' : '10%',
       dataIndex: 'timestamp',
       key: 'timestamp',
     },
     {
-      title: 'Typeset',
-      dataIndex: 'typeset',
-      key: 'typeset',
+      title: <span style={{ display: 'flex', justifyContent: 'center' }}>Typeset</span>,
+      width: wh ? '10%' : '5%',
+      dataIndex: 'typeset_id',
+      key: 'typeset_id',
     },
     {
-      title: 'Payload Size [Byte]',
-      dataIndex: 'payloadSize',
-      key: 'payloadSize',
+      title: <span style={{ display: 'flex', justifyContent: 'center' }}>Payload Size [Byte]</span>,
+      width: wh ? '14%' : '9%',
+      dataIndex: 'payload_size',
+      key: 'payload_size',
+    },
+    {
+      title: <span style={{ display: 'flex', justifyContent: 'center' }}>Payload</span>,
+      width: wh ? '35%' : '40%',
+      dataIndex: 'payload',
+      key: 'payload',
+      render: (text: string) => {
+        const base64Content = convertToBase64(text);
+        return <span>{base64Content}</span>;
+      },
     },
     {
       title: '',
       key: 'action',
-      render: (_text: unknown, record: DDOView) => (
-        <SearchOutlined style={{ cursor: 'pointer' }} onClick={() => handleViewClick(record)} />
-      ),
+      render: (record: DDO) => <SearchOutlined style={{ cursor: 'pointer' }} onClick={() => handleViewClick(record)} />,
     },
   ];
 
-  /*useEffect(() => {
-    if (selectedDevice) {
-      const fetchDdo = async () => {
-        try {
-          const offset = (currentPage - 1) * pageSize;
-          console.log(selectedDevice.id);
-          const response = await ConfigService.getDDOByDeviceId(selectedDevice.id, offset, pageSize, false);
-          const ddos = response.data.map((ddo) => ({
-            timestamp: ddo.timestamp,
-            typeset: ddo.typeset_id,
-            payload: ddo.payload,
-            payloadSize: ddo.payload_size,
-          }));
-          setDdos(ddos);
-          setTotalItems(response.pagination.total);
-        } catch (error) {
-          notify('error', t('error'), 'Errore ddo');
-        }
-      };
-      fetchDdo();
-    }
-  }, [selectedDevice, currentPage, pageSize]);*/
-
   const fetchDdo = async () => {
     if (!selectedDevice) return;
-    setIsLoading(true);
     try {
       const offset = (currentPage - 1) * pageSize;
-      const response = await ConfigService.getDDOByDeviceId(selectedDevice.id, offset, pageSize, false);
+      const response = await ConfigService.getDDOByDeviceId(selectedDevice.id, offset, pageSize, filterEnabled);
       const ddos = response.data.map((ddo) => ({
-        timestamp: ddo.timestamp,
-        typeset: ddo.typeset_id,
+        timestamp: dayjs(ddo.timestamp).format('DD/MM/YYYY HH:mm:ss'),
+        typeset_id: ddo.typeset_id,
         payload: ddo.payload,
-        payloadSize: ddo.payload_size,
+        payload_size: ddo.payload_size,
       }));
       setDdos(ddos);
       setTotalItems(response.pagination.total);
     } catch (error) {
       notify('error', t('error'), 'Errore ddo');
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  const handleSwitchChange = (checked: boolean) => {
+    setFilterEnabled(checked);
+    setCurrentPage(1);
+  };
+
+  useEffect(() => {
+    fetchDdo();
+  }, [filterEnabled, currentPage, pageSize, selectedDevice]);
 
   const handleDeviceClick = useCallback(
     async (device: DataDevice) => {
       setSelectedDevice(device);
       setIsDeviceSelected(true);
-      setIsLoading(true);
       setActiveTabKey('1');
       try {
         const data = await ConfigService.getDeviceById(device.id);
@@ -196,13 +205,11 @@ export default function Dispositivi() {
 
         formHeader.setFieldsValue({
           id: data.id,
-          modello: data.device_model.description,
-          matricola: data.device_model.serial,
+          modello: data.device_model.name,
+          serial: data.serial,
         });
       } catch (error) {
         console.error('Error fetching device details:', error);
-      } finally {
-        setIsLoading(false);
       }
     },
     [formGenerali, formHeader]
@@ -213,26 +220,6 @@ export default function Dispositivi() {
       handleDeviceClick(selectedDevice);
     }
   }, [selectedDevice, handleDeviceClick]);
-
-  /*const handleDeviceClick = (device: DataDevice) => {
-    setSelectedDevice(device);
-    setIsDeviceSelected(true);
-    setActiveTabKey('1');
-    configService.getDeviceById(device.id).then((data) => {
-      formGenerali.setFieldsValue({
-        id: data.id,
-        sid: data.din.sid,
-        din: data.din.din,
-        latitudine: data.latitude,
-        longitudine: data.longitude,
-      });
-      formHeader.setFieldsValue({
-        id: data.id,
-        modello: data.device_model.description,
-        matricola: data.device_model.serial,
-      });
-    });
-  };*/
 
   const fetchDevices = useCallback(async () => {
     setIsLoading(true);
@@ -260,14 +247,8 @@ export default function Dispositivi() {
     []
   );
 
-  const handleTest = () => {
-    setShowTestComponent((prevState) => !prevState);
-  };
-
   useEffect(() => {
-    const socket = new WebSocket(
-      process.env.NEXT_PUBLIC_WS_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'ws://localhost:3000'
-    );
+    const socket = new WebSocket(`${process.env.NEXT_PUBLIC_API_BASE_URL}`);
 
     socket.onmessage = (event) => {
       console.log('Ricevuto messaggio', event.data);
@@ -296,24 +277,272 @@ export default function Dispositivi() {
     };
   }, []);
 
-  const onChangeComplete = (value: number) => {
-    setValue(value);
-  };
+  const fetchFunctions = useCallback(async () => {
+    if (!selectedDevice?.id) return;
+    try {
+      const response = await ConfigService.getFunctions(selectedDevice.device_model_id);
+      setFunctions(response);
+    } catch (error) {
+      console.error('Error fetching functions:', error);
+    }
+  }, [selectedDevice?.id, selectedDevice?.device_model_id]);
 
-  const onChange = (status: boolean) => {
-    setStatus(status);
-  };
+  useEffect(() => {
+    fetchFunctions();
+  }, [fetchFunctions]);
 
-  const onSend = async () => {
+  const fetchProgram = useCallback(async () => {
+    if (!selectedDevice?.id) return;
+    try {
+      const response = await ConfigService.getProgram(selectedDevice.id);
+      setSelectedFunctions(response);
+      setCheckedFunctions(response.filter((func) => func.enabled).map((func) => func.id));
+    } catch (error) {
+      console.error('Error fetching program:', error);
+    }
+  }, [selectedDevice?.id]);
+
+  useEffect(() => {
+    fetchProgram();
+  }, [fetchProgram]);
+
+  const handleAddFunction = useCallback(
+    async (functionToAdd: Function) => {
+      if (!selectedDevice?.id) return;
+      try {
+        const response = await ConfigService.addFunction(selectedDevice.id, functionToAdd.id);
+        setSelectedFunctions((prev) => [...prev, response]);
+        setAlignment('Disallineato');
+        message.success('Funzione aggiunta con successo');
+      } catch (error) {
+        message.error("Errore nell'aggiunta della funzione");
+      }
+      fetchProgram();
+    },
+    [selectedDevice?.id, fetchProgram]
+  );
+
+  const handleDeleteFunctions = useCallback(async () => {
+    if (!selectedDevice?.id || checkedFunctions.length === 0) return;
+
+    const loadingMessage = message.loading('Eliminazione in corso...', 0);
+    const results: { success: boolean; functionId: number; error?: any }[] = [];
+
+    try {
+      for (const functionId of checkedFunctions) {
+        try {
+          if (results.length > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+
+          await ConfigService.deleteFunction(selectedDevice.id, functionId);
+          results.push({ success: true, functionId });
+          setAlignment('Disallineato');
+        } catch (error: any) {
+          if (error?.error_name === 'SequelizeTimeoutError' && error?.message?.includes('database is locked')) {
+            try {
+              await new Promise((resolve) => setTimeout(resolve, 1500));
+              await ConfigService.deleteFunction(selectedDevice.id, functionId);
+              results.push({ success: true, functionId });
+            } catch (retryError) {
+              results.push({ success: false, functionId, error: retryError });
+            }
+          } else {
+            results.push({ success: false, functionId, error });
+          }
+        }
+      }
+
+      const successfulDeletes = results.filter((result) => result.success).map((result) => result.functionId);
+      const failedDeletes = results.filter((result) => !result.success).map((result) => result.functionId);
+
+      if (successfulDeletes.length > 0) {
+        setSelectedFunctions((prev) => prev.filter((f) => !successfulDeletes.includes(f.id)));
+        setCheckedFunctions((prev) => prev.filter((id) => !successfulDeletes.includes(id)));
+        message.success(
+          successfulDeletes.length === 1
+            ? 'Funzione eliminata con successo'
+            : `${successfulDeletes.length} funzioni eliminate con successo`
+        );
+      }
+
+      if (failedDeletes.length > 0) {
+        message.error(
+          failedDeletes.length === 1
+            ? "Errore nell'eliminazione della funzione"
+            : `Errore nell'eliminazione di ${failedDeletes.length} funzioni`
+        );
+      }
+    } catch (error) {
+      message.error("Si è verificato un errore durante l'eliminazione delle funzioni");
+    } finally {
+      loadingMessage();
+    }
+  }, [selectedDevice?.id, checkedFunctions]);
+
+  const handleUpdateFunction = useCallback(
+    async (
+      functionId: number,
+      updates: {
+        parameters?: { property_id: number; value: any }[];
+        inputs?: { property_id: number; value: any }[];
+        outputs?: { property_id: number; value: any }[];
+        notifications?: { property_id: number; value: any }[];
+      }
+    ) => {
+      if (!selectedDevice?.id) return;
+
+      try {
+        const functionToUpdate = selectedFunctions.find((f) => f.id === functionId);
+        if (!functionToUpdate) return;
+
+        const updatedFunction = { ...functionToUpdate };
+
+        let hasUpdates = false;
+
+        if (updates.parameters) {
+          hasUpdates = true;
+          updatedFunction.parameters = updatedFunction.parameters.map((param) => {
+            const update = updates.parameters?.find((u) => u.property_id === param.property_id);
+            return update ? { ...param, value: update.value } : param;
+          });
+        }
+
+        if (updates.inputs) {
+          hasUpdates = true;
+          updatedFunction.inputs = updatedFunction.inputs.map((input) => {
+            const update = updates.inputs?.find((u) => u.property_id === input.property_id);
+            return update ? { ...input, value: update.value } : input;
+          });
+        }
+
+        if (updates.outputs) {
+          hasUpdates = true;
+          updatedFunction.outputs = updatedFunction.outputs.map((output) => {
+            const update = updates.outputs?.find((u) => u.property_id === output.property_id);
+            return update ? { ...output, value: update.value } : output;
+          });
+        }
+
+        if (updates.notifications) {
+          hasUpdates = true;
+          updatedFunction.notifications = updatedFunction.notifications.map((notification) => {
+            const update = updates.notifications?.find((u) => u.property_id === notification.property_id);
+            return update ? { ...notification, value: update.value } : notification;
+          });
+        }
+
+        if (!hasUpdates) return;
+
+        await ConfigService.updateFunction(selectedDevice.id, functionId, updatedFunction);
+        setSelectedFunctions((prev) => prev.map((func) => (func.id === functionId ? updatedFunction : func)));
+        setAlignment('Disallineato');
+        message.success('Funzione aggiornata con successo');
+      } catch (error) {
+        console.error('Error updating function:', error);
+        message.error("Errore nell'aggiornamento della funzione");
+      }
+    },
+    [selectedDevice?.id, selectedFunctions]
+  );
+
+  const handleStatusChange = useCallback((newStatus: boolean) => {
+    setStatus(newStatus);
+  }, []);
+
+  const handleValueChange = useCallback((newValue: number) => {
+    setValue(newValue);
+  }, []);
+
+  const handleFunctionSelect = useCallback((functionId: number) => {
+    setCheckedFunctions((prev) =>
+      prev.includes(functionId) ? prev.filter((id) => id !== functionId) : [...prev, functionId]
+    );
+  }, []);
+
+  const handleTestClick = useCallback(() => {
+    setShowTestComponent((prev) => !prev);
+  }, []);
+
+  const handleDinSelect = useCallback((din: number | null) => {
+    setSelectedDin(din);
+  }, []);
+
+  const handleSendCommand = useCallback(async () => {
     if (selectedDevice) {
       try {
-        const device = await configService.getDeviceById(selectedDevice.id);
-        const response = await configService.sendPayload(Number(device.din.din), status, value);
+        const dev = await ConfigService.getDeviceById(selectedDevice.id);
+        const response = await ConfigService.sendPayload(Number(dev.din.din), status, value);
         console.log(response);
       } catch (error) {
         console.error('Errore:', error);
       }
     }
+  }, [selectedDevice, status, value]);
+
+  const [isReportLoading, setIsReportLoading] = useState<boolean>(false);
+
+  const handleReportClick = async (extension: 'pdf' | 'xlsx') => {
+    if (!selectedDevice) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const blob = await ConfigService.getDeviceReport(selectedDevice.id, extension);
+
+      // Determina il tipo MIME e l'estensione del file
+      const mimeType =
+        extension === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const fileExtension = extension;
+
+      // Crea URL per il download
+      const url = window.URL.createObjectURL(new Blob([blob], { type: mimeType }));
+
+      // Crea un elemento anchor temporaneo
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `ddo-report-${selectedDevice.id}.${fileExtension}`);
+
+      // Aggiungi al DOM, clicca e rimuovi
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Pulisci l'URL creato
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      notify('error', t('error'), t('errorGeneratingReport'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const convertToBase64 = (content: string) => {
+    try {
+      return atob(content);
+    } catch (error) {
+      return content;
+    }
+  };
+
+  const reportMenu = {
+    items: [
+      { key: 'pdf', label: 'PDF' },
+      { key: 'xlsx', label: 'Excel' },
+    ],
+    onClick: ({ key }: { key: string }) => handleReportClick(key as 'pdf' | 'xlsx'),
+  };
+
+  const switchContainerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '16px',
+    padding: '12px',
+    backgroundColor: '#f5f5f5',
+    borderRadius: '8px',
+    width: 'fit-content',
   };
 
   const items: TabsProps['items'] = [
@@ -327,27 +556,6 @@ export default function Dispositivi() {
       children: (
         <div>
           <NodoFormGenerali form={formGenerali} />
-          <Button type="primary" onClick={handleTest} style={{ marginLeft: 20, marginBottom: 20 }}>
-            Test
-          </Button>
-          {showTestComponent && (
-            <div style={{ marginTop: -53, marginLeft: 90 }}>
-              <CardDispositivoFactory
-                deviceType="UPL"
-                deviceName="UPL Modello XX"
-                dinOptions={dinOptions}
-                selectedDin={selectedDin}
-                setSelectedDin={setSelectedDin}
-                onTest={handleTest}
-                onSend={onSend}
-                status={status}
-                setStatus={onChange}
-                value={value}
-                setValue={onChangeComplete}
-                showTestControl={showTestControl}
-              />
-            </div>
-          )}
         </div>
       ),
     },
@@ -358,7 +566,30 @@ export default function Dispositivi() {
           {<SettingOutlined style={{ fontSize: '1.1rem' }} />} {t('config')}
         </span>
       ),
-      children: <ParametersTab key={selectedDevice?.id} device={selectedDevice} />,
+      children: (
+        <ParametersTab
+          key={selectedDevice?.id}
+          device={selectedDevice}
+          functions={functions}
+          selectedFunctions={selectedFunctions}
+          checkedFunctions={checkedFunctions}
+          status={status}
+          value={value}
+          showTestComponent={showTestComponent}
+          selectedDin={selectedDin}
+          dinOptions={dinOptions}
+          onStatusChange={handleStatusChange}
+          onValueChange={handleValueChange}
+          onSendCommand={handleSendCommand}
+          onFunctionSelect={handleFunctionSelect}
+          onTestClick={handleTestClick}
+          onDinSelect={handleDinSelect}
+          onAddFunction={handleAddFunction}
+          onDeleteFunctions={handleDeleteFunctions}
+          onUpdateFunction={handleUpdateFunction}
+          onAlignmentChange={setAlignment}
+        />
+      ),
     },
     {
       key: '3',
@@ -369,9 +600,37 @@ export default function Dispositivi() {
       ),
       children: (
         <>
+          <div style={switchContainerStyle}>
+            <Switch
+              checked={filterEnabled}
+              onChange={handleSwitchChange}
+              unCheckedChildren={<DownloadOutlined />}
+              checkedChildren={<SendOutlined />}
+              style={{ backgroundColor: filterEnabled ? '#1890ff' : '#52c41a' }}
+            />
+            <span
+              style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#262626',
+              }}
+            >
+              {filterEnabled ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <SendOutlined /> Messaggi inviati
+                </span>
+              ) : (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <DownloadOutlined /> Messaggi ricevuti
+                </span>
+              )}
+            </span>
+          </div>
           <Table
             columns={columnsEvents}
             dataSource={ddos}
+            scroll={{ y: wh ? 120 : 700 }}
+            size="small"
             pagination={{
               current: currentPage,
               pageSize: pageSize,
@@ -382,10 +641,21 @@ export default function Dispositivi() {
                 setCurrentPage(page);
                 setPageSize(pageSize);
               },
+              responsive: true,
+              style: { marginBottom: 16 },
             }}
           />
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px', gap: '8px' }}>
             <Button type="primary">{t('clearLog')}</Button>
+            <Dropdown menu={reportMenu} disabled={isReportLoading || !selectedDevice}>
+              <Button type="primary" loading={isReportLoading}>
+                <Space>
+                  <FileOutlined />
+                  Report
+                  <DownOutlined />
+                </Space>
+              </Button>
+            </Dropdown>
           </div>
           <Modal
             title={<span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{t('details')}</span>}
@@ -400,15 +670,15 @@ export default function Dispositivi() {
                     {selectedRow.timestamp}
                   </Descriptions.Item>
                   <Descriptions.Item label={'Typeset'} labelStyle={{ fontWeight: 'bold' }}>
-                    {selectedRow.typeset}
+                    {selectedRow.typeset_id}
                   </Descriptions.Item>
                   <Descriptions.Item label={'Payload Size [Byte]'} labelStyle={{ fontWeight: 'bold' }}>
-                    {selectedRow.payloadSize}
+                    {selectedRow.payload_size}
                   </Descriptions.Item>
                 </Descriptions>
                 <p style={{ marginTop: 10, fontSize: '1rem' }}>
                   <strong>Payload Content</strong>
-                  <PayloadContentViewer payloadContent={selectedRow.payload} />
+                  <PayloadContentViewer key={selectedRow.id} payloadContent={selectedRow.payload} />
                 </p>
               </Space>
             ) : null}
@@ -425,7 +695,7 @@ export default function Dispositivi() {
       ),
       children: (
         <div style={{ height: '55vh', marginTop: -40 }}>
-          {selectedDevice ? <MapComponent device={selectedDevice} /> : null}
+          {selectedDevice && <MapComponent key={selectedDevice?.id} device={selectedDevice} form={formGenerali} />}
         </div>
       ),
     },
@@ -440,17 +710,6 @@ export default function Dispositivi() {
     router.push(`/${locale}/admin/dispositivi/editDispositivo/${deviceId}`);
   };
 
-  /*const itemRender = (_, type, originalElement) => {
-    console.log(type, 'a');
-    if (type === 'prev') {
-      return <a style={{ color: 'white' }}>{'<'}</a>;
-    }
-    if (type === 'next') {
-      return <a style={{ color: 'white', cursor: 'pointer' }}>{'>'}</a>;
-    }
-    return originalElement;
-  };*/
-
   const handleTabChange = (key: string) => {
     setActiveTabKey(key);
     if (key === '3') {
@@ -462,16 +721,20 @@ export default function Dispositivi() {
     <>
       {contextHolder}
       <div className={styles.container}>
-        <Layout style={{ height: '100%' }}>
+        <Layout style={{ minHeight: '92vh' }}>
           <Sider
+            breakpoint="lg"
+            collapsedWidth="0"
             width={250}
             theme="dark"
+            className={styles.siderCustom}
             style={{
               marginLeft: '-22px',
-              marginTop: -2,
+              marginTop: 2,
               maxHeight: '101%',
               display: 'flex',
               flexDirection: 'column',
+              borderRadius: '4px',
             }}
           >
             <div style={{ padding: '12px', borderBottom: '1px solid #303030' }}>
@@ -528,30 +791,25 @@ export default function Dispositivi() {
               )}
               style={{ height: 'calc(100% - 120px)', overflowY: 'auto', padding: '8px 16px' }}
             />
-            {/*<Pagination
-              current={1}
-              pageSize={pageSize}
-              pageSizeOptions={['10', '20', '50', '100']}
-              total={1}
-              onChange={() => {}}
-              showSizeChanger
-              showQuickJumper
-              itemRender={itemRender}
-              className={`${styles['ant-pagination-prev']} ${styles['ant-pagination-next']}`}
-              style={{ marginTop: -50 }}
-            />*/}
           </Sider>
           <Layout>
             <Content style={{ padding: 0, background: '#fff', maxHeight: '100%' }}>
               {isDeviceSelected ? (
-                <DataPanel title={selectedDevice?.name} showSemaphore={false} showLinkStatus showAlignmentStatus>
+                <DataPanel
+                  title={selectedDevice?.name}
+                  showSemaphore={false}
+                  showLinkStatus
+                  showAlignmentStatus
+                  alignment={alignment}
+                  linkStatus={linkStatus}
+                >
                   <Panel showSaveButtons={false} layoutStyle="devices">
                     <PanelView layoutStyle="devices">
                       <NodoFormHeader form={formHeader} />
                       <Tabs
                         type="card"
                         items={items}
-                        style={{ padding: 10, marginTop: -30 }}
+                        style={{ padding: 10 }}
                         activeKey={activeTabKey}
                         onChange={handleTabChange}
                       />
@@ -571,7 +829,6 @@ export default function Dispositivi() {
           </Layout>
         </Layout>
       </div>
-      <div className={styles.mobileMessage}>{t('mobileMessage')}</div>
     </>
   );
 }

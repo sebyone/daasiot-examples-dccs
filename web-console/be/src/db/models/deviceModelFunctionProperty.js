@@ -41,7 +41,7 @@ module.exports = (sequelize, DataTypes) => {
     data_type: {
       type: DataTypes.INTEGER,
       validate: {
-        isIn: [[1, 2, 3, 4]],
+        isIn: [[1, 2, 3, 4, 5, 6, 7]],
       },
       allowNull: false
     },

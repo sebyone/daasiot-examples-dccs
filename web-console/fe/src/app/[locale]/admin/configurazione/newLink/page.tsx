@@ -52,7 +52,6 @@ const NewLink = () => {
 
   const handleGoBack = () => {
     if (!isDataSaved) {
-      notify('warning', tBack('warning'), tBack('warningContent'));
       Modal.confirm({
         title: tBack('title'),
         content: tBack('content'),

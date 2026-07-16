@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 
 const { sendError, getPaginationParams, toPaginationData } = require('./utilities');
-const { DeviceModel, DeviceModelFunction, DeviceModelFunctionProperty, DeviceFunction, DeviceFunctionProperty } = require('../../db/models');
+const { DeviceModel, DeviceModelFunction, DeviceModelFunctionProperty, DeviceFunction, DeviceFunctionProperty, Device } = require('../../db/models');
 const db = require('../../db/models');
+const daas = require('../../daas/daas');
 
 module.exports = {
   router,
@@ -28,13 +29,19 @@ const DEV_MOD_PROPERTY_TYPE_MAP_REVERSE = {
 
 const DEV_MOD_DEFAULT_VALUE_MAP = {
   // i32
-  1: '1',
-  // i16
-  2: '1',
+  1: '0',
+  // i06
+  2: '0',
   // f32
-  3: '1.0',
+  3: '0.0',
   // string
   4: '',
+  // i8
+  5: '0',
+  // i64
+  6: '0',
+  // f64
+  7: '0.0',
 }
 
 router.get('/device_models/any/functions/', async function (req, res) {
@@ -369,9 +376,11 @@ router.post('/devices/:deviceId/functions/', async function (req, res) {
       throw new Error(`DeviceModelFunction con id=${deviceFunction.device_model_function_id} non trovato.`);
     }
 
-    if (deviceModelFunction.device_model_id !== deviceId) {
+    const device = await Device.findByPk(deviceId, { transaction: t });
+
+    if (deviceModelFunction.device_model_id !== device.device_model_id) {
       res.status(404);
-      throw new Error(`DeviceModelFunction con id=${deviceFunction.device_model_function_id} non appartiene al DeviceModel con id=${deviceId}.`);
+      throw new Error(`DeviceModelFunction con id=${deviceFunction.device_model_function_id} appartiene al DeviceModel con id=${deviceModelFunction.device_model_id} e non al Device con device_model_id=${device.device_model_id}.`);
     }
 
     const newDeviceFunction = await DeviceFunction.create({
@@ -525,6 +534,63 @@ router.delete('/devices/:deviceId/functions/:dFuntionId', async function (req, r
 
 
 
+router.post('/devices/:deviceId/functions/apply', async function (req, res) {
+  const t = await db.sequelize.transaction();
+  try {
+    const deviceId = parseInt(req.params.deviceId);
+
+    const device = await Device.findByPk(deviceId, { transaction: t, include: 'din' });
+
+    if (device === null) {
+      res.status(404);
+      throw new Error(`Device con id=${deviceId} non trovato.`);
+    }
+
+    const deviceFunctions = await DeviceFunction.findAll({
+      where: { device_id: deviceId },
+      include: [
+        {
+          model: DeviceModelFunction,
+          as: 'function',
+          include: DEV_MOD_PROPERTY_TYPE_LIST,
+        },
+        ...DEV_MOD_PROPERTY_TYPE_LIST,
+      ],
+      transaction: t,
+    });
+
+    console.log(JSON.stringify(deviceFunctions, null, 2));
+
+
+    const din = parseInt(device.din.din);
+
+    let index = 0;
+    for (const deviceFunction of deviceFunctions) {
+      // send a DDO with the deviceFunction properties
+      const deviceFunctionJSON = addPropertyTemplateToDeviceFunction(deviceFunction);
+
+      const payload = DeviceFunctionToDDOPayload(deviceFunctionJSON, index);
+
+      console.log(payload);
+
+      // send the DDO to the device
+      const typeset = 3700 + parseInt(deviceFunction.device_model_function_id);
+
+      console.log(`sending DDO [to din: ${din}, typeset: ${typeset}]\n${payload}\n`);
+
+      daas.send(din, typeset, payload);
+      index += 1;
+    }
+
+    await t.commit();
+    res.send({ message: `inviate regole al device con din ${din}` });
+  }
+  catch (err) {
+    await t.rollback();
+    sendError(res, err);
+  }
+});
+
 function validateWithPropertyValueType(property, value) {
   switch (property.data_type) {
 
@@ -534,12 +600,21 @@ function validateWithPropertyValueType(property, value) {
     // int16
     case 2:
       return isNumeric(value) && Number.isInteger(parseFloat(value));
-
     // float32
     case 3:
       return isNumeric(value)
+    // string
     case 4:
       return typeof value === 'string';
+    // int8
+    case 5:
+      return isNumeric(value) && Number.isInteger(parseFloat(value));
+    // i64
+    case 6:
+      return isNumeric(value) && Number.isInteger(parseFloat(value));
+    // f64
+    case 7:
+      return isNumeric(value);
     default:
       return false;
   }
@@ -553,6 +628,12 @@ function validateWithPropertyValueType(property, value) {
 }
 
 async function createDeviceModelFunctionProperty(res, property, deviceModelFunction, property_type, t) {
+  property_type = parseInt(property_type);
+  if (property_type < 1 || property_type > 4) {
+    res.status(400);
+    throw new Error(`Il campo property_type deve essere compreso tra 1 e 4.`);
+  }
+
   property.property_type = property_type;
   property.function_id = deviceModelFunction.id;
 
@@ -568,9 +649,9 @@ async function createDeviceModelFunctionProperty(res, property, deviceModelFunct
     throw new Error(`Il campo data_type è obbligatorio per tutti i ${property_list}.`);
   }
 
-  if (property.data_type < 1 || property.data_type > 4) {
+  if (property.data_type < 1 || property.data_type > 7) {
     res.status(400);
-    throw new Error(`Il campo data_type deve essere compreso tra 1 e 4.`);
+    throw new Error(`Il campo data_type deve essere compreso tra 1 e 7.`);
   }
 
   if (property.default_value === undefined) {
@@ -611,9 +692,9 @@ async function updateDeviceModelFunctionProperty(res, oldProperty, newProperty, 
 
   if (newProperty.default_value !== undefined) {
 
-    if (newProperty.data_type < 1 || newProperty.data_type > 4) {
+    if (newProperty.data_type < 1 || newProperty.data_type > 7) {
       res.status(400);
-      throw new Error(`Il campo data_type deve essere compreso tra 1 e 4. (property_id=${oldProperty.id})`);
+      throw new Error(`Il campo data_type deve essere compreso tra 1 e 7. (property_id=${oldProperty.id})`);
     }
 
     if (!validateWithPropertyValueType(oldProperty, newProperty.default_value)) {
@@ -733,6 +814,7 @@ async function createDeviceModelFunction(req, res, deviceModelId, deviceModelFun
 
   const newDeviceModelFunction = await DeviceModelFunction.create(deviceModelFunction, { transaction: t });
 
+  // per ogni tipo di property (parameters, inputs, outputs, notifications)
   for (const property_list of DEV_MOD_PROPERTY_TYPE_LIST) {
     const property_type = DEV_MOD_PROPERTY_TYPE_MAP_REVERSE[property_list];
 
@@ -743,10 +825,40 @@ async function createDeviceModelFunction(req, res, deviceModelId, deviceModelFun
     }
   }
 
+  // se la device model function ha una lista 'properties' la uso per creare le properties
+  if (deviceModelFunction.properties) {
+    for (const property of deviceModelFunction.properties) {
+      if (!property.property_type) {
+        res.status(400);
+        throw new Error(`Il campo property_type è obbligatorio per le properties dentro la lista 'properties'.`);
+      }
+
+      await createDeviceModelFunctionProperty(res, property, newDeviceModelFunction, property.property_type, t);
+    }
+  }
+
+
   const deviceModelFunctionWithProperties = await DeviceModelFunction.findByPk(newDeviceModelFunction.id, {
     include: DEV_MOD_PROPERTY_TYPE_LIST,
     transaction: t,
   });
 
   return deviceModelFunctionWithProperties;
+}
+
+
+function DeviceFunctionToDDOPayload(fn, func_index) {
+  const payload = {
+    func_index,
+    parameters: {},
+    inputs: {},
+    outputs: {},
+    notifications: {}
+  }
+
+  for (const property_list of DEV_MOD_PROPERTY_TYPE_LIST) {
+    fn[property_list].forEach(p => payload[property_list][p.parameter_template.name] = p.value);
+  }
+
+  return JSON.stringify(payload, null, 2);
 }

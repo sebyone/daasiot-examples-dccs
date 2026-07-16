@@ -1,0 +1,31 @@
+.header-descriptions {
+  width: 100%;
+}
+
+.header-field {
+  font-size: 0.8rem;
+  padding: 8px;
+  word-break: break-word;
+}
+
+@media (max-width: 576px) {
+  .header-descriptions {
+    margin-bottom: 16px;
+  }
+
+  .header-descriptions .ant-descriptions-item-label,
+  .header-descriptions .ant-descriptions-item-content {
+    padding: 8px 4px;
+  }
+
+  .header-field {
+    padding: 4px;
+  }
+}
+
+@media (max-width: 768px) {
+  form[layout='vertical'] {
+    margin-left: 15px !important;
+    margin-right: 15px;
+  }
+}

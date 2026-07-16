@@ -19,7 +19,6 @@ const PanelList = ({ children, layoutStyle }: PanelListProps) => {
   return (
     <>
       <div className={containerClass}>{children}</div>
-      <div className="mobile-message">Questo contenuto non è disponibile sui dispositivi mobile.</div>
     </>
   );
 };

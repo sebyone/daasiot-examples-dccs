@@ -11,17 +11,6 @@
  * francescopantusa98@gmail.com - initial implementation
  *
  */
-.customStatistic :global(.ant-statistic-title) {
-  display: flex;
-  justify-content: center;
-}
-
-.mobileMessage {
-  display: none;
-  padding: 24px;
-  font-size: 1.2em;
-  text-align: center;
-}
 
 .container {
   display: flex;
@@ -30,17 +19,30 @@
   align-items: center;
   min-height: 80vh;
   padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-@media (max-width: 600px) {
-  .container {
-    display: none;
-  }
+.customStatistic :global(.ant-card-body) {
+  padding: 32px;
+}
 
-  .mobileMessage {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
+.customStatistic :global(.ant-statistic-content) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.customStatistic :global(.ant-statistic-content-prefix) {
+  font-size: 32px;
+}
+
+.customStatistic :global(.ant-statistic-content-value) {
+  font-size: 32px;
+}
+
+.customStatistic :global(.ant-statistic-title) {
+  text-align: center;
+  font-size: 18px;
+  margin-bottom: 16px;
 }

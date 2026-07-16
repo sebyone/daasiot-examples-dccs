@@ -1,5 +1,16 @@
 const express = require('express');
+const fs = require('node:fs');
+const path = require('node:path');
+const yaml = require('js-yaml');
 const { sendError } = require('./utilities');
+
+function getApiVersion() {
+    const specificationPath = path.resolve(__dirname, '../../api-specifications/api-spec.yml');
+    const specification = yaml.load(fs.readFileSync(specificationPath, 'utf8'));
+    return specification.info.version;
+}
+
+const apiVersion = getApiVersion();
 
 function serializePayload(payload) {
     if (Buffer.isBuffer(payload) || typeof payload === 'string') {
@@ -20,7 +31,7 @@ function createConfigAndLifecycleRouter({
     router.get('/', (_req, res) => {
         res.send({
             name: 'DaasIoT API',
-            version: 1,
+            version: apiVersion,
             message: 'OK',
         });
     });

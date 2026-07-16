@@ -152,6 +152,11 @@ router.delete('/receivers/:receiverId', async function (req, res) {
     const t = await db.sequelize.transaction();
 
     try {
+        if (receiverId === 1) {
+            res.status(403);
+            throw new Error("Non è possibile eliminare il receiver con id=1.");
+        }
+
         const receiver = await DinLocal.findByPk(receiverId, { transaction: t });
 
         if (receiver === null) {
