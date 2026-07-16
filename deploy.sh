@@ -113,6 +113,20 @@ ensure_port_available() {
 
 [[ -d "${BACKEND_DIR}" ]] || fail "backend non trovato in ${BACKEND_DIR}"
 [[ -d "${FRONTEND_DIR}" ]] || fail "frontend non trovato in ${FRONTEND_DIR}"
+
+if git -C "${APP_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    DEPLOY_BRANCH="$(git -C "${APP_DIR}" branch --show-current)"
+    DEPLOY_COMMIT="$(git -C "${APP_DIR}" rev-parse --short HEAD)"
+    case "${DEPLOY_BRANCH}" in
+        modernization/daas-sdk-0.17.9 | modernization/daas-sdk-0.22.0)
+            ;;
+        *)
+            fail "branch non valido per il deploy: ${DEPLOY_BRANCH:-detached}. Passa a un branch modernization/daas-sdk-*"
+            ;;
+    esac
+    log "Sorgente deploy: ${DEPLOY_BRANCH} (${DEPLOY_COMMIT})"
+fi
+
 [[ "${ENABLE_TLS}" == "0" || "${ENABLE_TLS}" == "1" ]] ||
     fail "ENABLE_TLS deve essere 0 oppure 1"
 [[ "${SEED_DATABASE}" == "auto" || "${SEED_DATABASE}" == "0" || "${SEED_DATABASE}" == "1" ]] ||
@@ -187,6 +201,22 @@ log "Runtime isolato: Node.js ${NODE_VERSION}, npm ${NPM_VERSION}"
 if command -v node >/dev/null 2>&1; then
     log "Il Node.js globale $(node --version) resta invariato"
 fi
+
+BACKEND_EXPRESS_MAJOR="$("${NODE_BIN}" -p \
+    "require('${BACKEND_DIR}/package.json').dependencies.express.replace(/^[^0-9]*/, '').split('.')[0]")"
+FRONTEND_NEXT_MAJOR="$("${NODE_BIN}" -p \
+    "require('${FRONTEND_DIR}/package.json').dependencies.next.replace(/^[^0-9]*/, '').split('.')[0]")"
+FRONTEND_REACT_MAJOR="$("${NODE_BIN}" -p \
+    "require('${FRONTEND_DIR}/package.json').dependencies.react.replace(/^[^0-9]*/, '').split('.')[0]")"
+
+[[ "${BACKEND_EXPRESS_MAJOR}" -ge 5 ]] ||
+    fail "backend obsoleto rilevato: Express major ${BACKEND_EXPRESS_MAJOR}, atteso >=5"
+[[ "${FRONTEND_NEXT_MAJOR}" -ge 16 ]] ||
+    fail "frontend obsoleto rilevato: Next.js major ${FRONTEND_NEXT_MAJOR}, atteso >=16"
+[[ "${FRONTEND_REACT_MAJOR}" -ge 19 ]] ||
+    fail "frontend obsoleto rilevato: React major ${FRONTEND_REACT_MAJOR}, atteso >=19"
+
+log "Stack verificato: Express ${BACKEND_EXPRESS_MAJOR}, Next.js ${FRONTEND_NEXT_MAJOR}, React ${FRONTEND_REACT_MAJOR}"
 
 if ! getent group "${APP_GROUP}" >/dev/null 2>&1; then
     log "Creazione del gruppo di servizio ${APP_GROUP}"
