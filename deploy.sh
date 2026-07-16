@@ -6,8 +6,9 @@ APP_DIR="${APP_DIR:-/opt/dccs}"
 APP_USER="${APP_USER:-dccs}"
 APP_GROUP="${APP_GROUP:-dccs}"
 DOMAIN="${DOMAIN:-dccs.daasiot.com}"
-BACKEND_PORT="${BACKEND_PORT:-3000}"
-FRONTEND_PORT="${FRONTEND_PORT:-3001}"
+BACKEND_PORT="${BACKEND_PORT:-3100}"
+FRONTEND_PORT="${FRONTEND_PORT:-3101}"
+FRONTEND_HEALTH_PATH="${FRONTEND_HEALTH_PATH:-/it/admin}"
 NODE_RUNTIME_VERSION="${NODE_RUNTIME_VERSION:-20.20.2}"
 ENABLE_TLS="${ENABLE_TLS:-1}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
@@ -69,12 +70,57 @@ fail() {
     exit 1
 }
 
+check_local_service() {
+    local service_name="$1"
+    local url="$2"
+    local max_attempts="${SERVICE_CHECK_ATTEMPTS:-30}"
+    local delay="${SERVICE_CHECK_DELAY:-2}"
+    local attempt
+
+    for ((attempt = 1; attempt <= max_attempts; attempt += 1)); do
+        if curl --fail --silent --show-error --max-time 5 \
+            "${url}" >/dev/null 2>&1; then
+            echo "OK: ${service_name} (${url})"
+            return
+        fi
+
+        if ! run_root systemctl is-active --quiet "${service_name}.service"; then
+            break
+        fi
+
+        if [[ "${attempt}" -lt "${max_attempts}" ]]; then
+            sleep "${delay}"
+        fi
+    done
+
+    echo
+    echo "Diagnostica di ${service_name}:" >&2
+    run_root systemctl status "${service_name}.service" --no-pager || true
+    run_root journalctl -u "${service_name}.service" -n 50 --no-pager || true
+    fail "${service_name} non risponde correttamente su ${url}"
+}
+
+ensure_port_available() {
+    local port="$1"
+    local component="$2"
+
+    if run_root ss -H -ltn "sport = :${port}" | grep -q .; then
+        echo "La porta ${port}, richiesta da ${component}, è già occupata:" >&2
+        run_root ss -ltnp "sport = :${port}" >&2 || true
+        fail "scegli una porta libera con ${component^^}_PORT oppure libera la porta ${port}"
+    fi
+}
+
 [[ -d "${BACKEND_DIR}" ]] || fail "backend non trovato in ${BACKEND_DIR}"
 [[ -d "${FRONTEND_DIR}" ]] || fail "frontend non trovato in ${FRONTEND_DIR}"
 [[ "${ENABLE_TLS}" == "0" || "${ENABLE_TLS}" == "1" ]] ||
     fail "ENABLE_TLS deve essere 0 oppure 1"
 [[ "${SEED_DATABASE}" == "auto" || "${SEED_DATABASE}" == "0" || "${SEED_DATABASE}" == "1" ]] ||
     fail "SEED_DATABASE deve essere auto, 0 oppure 1"
+[[ "${SERVICE_CHECK_ATTEMPTS:-30}" =~ ^[1-9][0-9]*$ ]] ||
+    fail "SERVICE_CHECK_ATTEMPTS deve essere un intero positivo"
+[[ "${SERVICE_CHECK_DELAY:-2}" =~ ^[1-9][0-9]*$ ]] ||
+    fail "SERVICE_CHECK_DELAY deve essere un intero positivo"
 
 if [[ "${ENABLE_TLS}" == "1" && ! -f "${CERTIFICATE_DIR}/fullchain.pem" && -z "${CERTBOT_EMAIL}" ]]; then
     fail "imposta CERTBOT_EMAIL per creare il certificato TLS (esempio: CERTBOT_EMAIL=admin@daasiot.com sudo ./deploy.sh)"
@@ -90,7 +136,7 @@ fi
 
 log "Installazione dei pacchetti di sistema"
 run_root apt-get update
-PACKAGES=(nginx curl ca-certificates build-essential python3 xz-utils)
+PACKAGES=(nginx curl ca-certificates build-essential python3 xz-utils iproute2)
 if [[ "${ENABLE_TLS}" == "1" ]]; then
     PACKAGES+=(certbot)
 fi
@@ -194,6 +240,10 @@ if [[ "${SEED_DATABASE}" == "1" || ("${SEED_DATABASE}" == "auto" && "${DATABASE_
 fi
 
 log "Creazione dei servizi systemd"
+run_root systemctl stop dccs-backend.service dccs-frontend.service 2>/dev/null || true
+ensure_port_available "${BACKEND_PORT}" "backend"
+ensure_port_available "${FRONTEND_PORT}" "frontend"
+
 write_root_file /etc/systemd/system/dccs-backend.service <<EOF
 [Unit]
 Description=DCCS DaaS backend
@@ -258,10 +308,12 @@ run_root systemctl enable --now dccs-backend.service dccs-frontend.service
 run_root systemctl restart dccs-backend.service dccs-frontend.service
 
 log "Verifica dei servizi applicativi locali"
-curl --fail --silent --show-error --retry 10 --retry-delay 2 \
-    "http://127.0.0.1:${BACKEND_PORT}/health/live" >/dev/null
-curl --fail --silent --show-error --retry 10 --retry-delay 2 \
-    "http://127.0.0.1:${FRONTEND_PORT}/" >/dev/null
+check_local_service \
+    "dccs-backend" \
+    "http://127.0.0.1:${BACKEND_PORT}/health/live"
+check_local_service \
+    "dccs-frontend" \
+    "http://127.0.0.1:${FRONTEND_PORT}${FRONTEND_HEALTH_PATH}"
 
 run_root mkdir -p /var/www/certbot
 run_root chown -R www-data:www-data /var/www/certbot
