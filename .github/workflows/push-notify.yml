@@ -1,0 +1,30 @@
+name: Notifica email ai push
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invia email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: mail.sebyone.it
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          from: GitHub Actions <${{ secrets.MAIL_USERNAME }}>
+          to: ${{ secrets.MAIL_TO }}
+          subject: "${{ github.event.repository.name }} - push di ${{ github.actor }}"
+          body: |
+            Nuovo push sul repository ${{ github.repository }}
+
+            Branch: ${{ github.ref_name }}
+            Autore: ${{ github.actor }}
+            Ultimo commit: ${{ github.event.head_commit.message }}
+            SHA: ${{ github.sha }}
+
+            Modifiche: ${{ github.event.compare }}
